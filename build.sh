@@ -15,6 +15,7 @@ User = get_user_model()
 phone = os.environ.get('DJANGO_SUPERUSER_PHONE_NUMBER')
 password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
 
+# Only check for the two variables you set
 if phone and password :
     try:
         # Try to find the user
@@ -31,10 +32,11 @@ if phone and password :
         User.objects.create_superuser(
             phone_number=phone,
             password=password,
+            name='Admin'  # <-- THIS WAS THE BUG. We'll use a default name.
         )
         print('Superuser created successfully.')
     except Exception as e:
         print(f"An error occurred: {e}")
 else:
-    print('Superuser environment variables not set. Skipping operation.')
+    print('Phone number or password environment variables not set. Skipping operation.')
 EOF
