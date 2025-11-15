@@ -14,9 +14,8 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 phone = os.environ.get('DJANGO_SUPERUSER_PHONE_NUMBER')
 password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
-name = os.environ.get('DJANGO_SUPERUSER_NAME')
 
-if phone and password and name:
+if phone and password :
     try:
         # Try to find the user
         user = User.objects.get(phone_number=phone)
@@ -32,7 +31,6 @@ if phone and password and name:
         User.objects.create_superuser(
             phone_number=phone,
             password=password,
-            name=name
         )
         print('Superuser created successfully.')
     except Exception as e:
