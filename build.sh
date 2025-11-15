@@ -6,7 +6,7 @@ pip install -r requirements.txt
 
 python manage.py collectstatic --no-input
 python manage.py migrate
-echo "Creating/Updating superuser..."
+echo "Running superuser script..."
 cat <<EOF | python manage.py shell
 import os
 from django.contrib.auth import get_user_model
@@ -18,11 +18,16 @@ name = os.environ.get('DJANGO_SUPERUSER_NAME')
 
 if phone and password and name:
     try:
+        # Try to find the user
         user = User.objects.get(phone_number=phone)
+        
+        # If found, update the password
         user.set_password(password)
         user.save()
-        print(f"Superuser '{phone}' already existed. Password has been updated.")
+        print(f"Superuser '{phone}' already exists. Password has been updated.")
+        
     except User.DoesNotExist:
+        # If not found, create a new one
         print(f"Superuser '{phone}' not found. Creating new superuser...")
         User.objects.create_superuser(
             phone_number=phone,
