@@ -2,10 +2,16 @@
 # exit on error
 set -o errexit
 
+# Install dependencies
 pip install -r requirements.txt
 
+# Collect static files (for WhiteNoise)
 python manage.py collectstatic --no-input
+
+# Run database migrations
 python manage.py migrate
+
+# Create OR Update superuser
 echo "Running superuser script..."
 cat <<EOF | python manage.py shell
 import os
@@ -15,16 +21,17 @@ User = get_user_model()
 phone = os.environ.get('DJANGO_SUPERUSER_PHONE_NUMBER')
 password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
 
-# Only check for the two variables you set
-if phone and password :
+if phone and password:
     try:
         # Try to find the user
         user = User.objects.get(phone_number=phone)
         
-        # If found, update the password
+        # If found, update password AND staff status
         user.set_password(password)
+        user.is_staff = True
+        user.is_superuser = True
         user.save()
-        print(f"Superuser '{phone}' already exists. Password has been updated.")
+        print(f"Superuser '{phone}' found. Password and staff status updated.")
         
     except User.DoesNotExist:
         # If not found, create a new one
@@ -32,7 +39,7 @@ if phone and password :
         User.objects.create_superuser(
             phone_number=phone,
             password=password,
-            name='Admin'  # <-- THIS WAS THE BUG. We'll use a default name.
+            name='Admin'  # <-- This fixes the bug
         )
         print('Superuser created successfully.')
     except Exception as e:
