@@ -13,6 +13,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import RetrieveUpdateAPIView
 from .serializers import UserProfileSerializer
 from .serializers import SendOTPSerializer, VerifyOTPSerializer
+from firebase_admin import auth as firebase_auth
+from rest_framework.exceptions import AuthenticationFailed
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -85,7 +87,7 @@ class UserProfileView(RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         # When they update, we mark their profile as complete
         serializer.save(is_profile_complete=True)
-        
+
 class VerifyOTPView(APIView):
     permission_classes = []
     serializer_class = VerifyOTPSerializer
@@ -120,3 +122,50 @@ class VerifyOTPView(APIView):
                 'is_profile_complete': user.is_profile_complete,
             }
         }, status=status.HTTP_200_OK)
+    
+class FirebaseLoginView(APIView):
+    """
+    Handles user login/signup using a Firebase ID Token.
+    Receives a Firebase token, verifies it, finds or creates a user,
+    and returns our own Django JWT.
+    """
+    permission_classes = [] # This endpoint is public
+
+    def post(self, request):
+        # 1. Get the Firebase token from the React app
+        firebase_token = request.data.get('token')
+        if not firebase_token:
+            raise AuthenticationFailed('No Firebase token provided.')
+
+        try:
+            # 2. Verify the token with Google
+            decoded_token = firebase_auth.verify_id_token(firebase_token)
+            phone_number = decoded_token.get('phone_number')
+
+            if not phone_number:
+                raise AuthenticationFailed('Invalid Firebase token.')
+
+            # 3. Find or create the user in our database
+            # We use phone_number (e.g., +918688294228) as the unique ID
+            user, created = CustomUser.objects.get_or_create(
+                phone_number=phone_number,
+                defaults={'name': ''} # We'll let them set this in the "Complete Profile" step
+            )
+
+            # 4. Generate our own Django JWTs for them
+            tokens = get_tokens_for_user(user)
+
+            # 5. Send back our tokens and their profile status
+            return Response({
+                'message': 'Login successful!',
+                'tokens': tokens,
+                'user': {
+                    'phone_number': user.phone_number,
+                    'name': user.name,
+                    'is_profile_complete': user.is_profile_complete
+                }
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(f"Firebase auth error: {e}")
+            raise AuthenticationFailed('Invalid Firebase token or user lookup failed.')

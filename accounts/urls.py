@@ -4,6 +4,7 @@ from . import views
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
+    path('firebase-login/', views.FirebaseLoginView.as_view(), name='firebase-login'),
     path('send-otp/', views.SendOTPView.as_view(), name='send-otp'),
     path('verify-otp/', views.VerifyOTPView.as_view(), name='verify-otp'),  
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
