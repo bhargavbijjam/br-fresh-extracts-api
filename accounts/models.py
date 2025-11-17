@@ -31,6 +31,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=100)
     address = models.TextField(blank=True, null=True)
+    is_profile_complete = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False) # For admin access
 

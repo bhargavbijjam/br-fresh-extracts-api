@@ -7,12 +7,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 import random
 from django.core.cache import cache
-
-# --- NEW IMPORTS ---
 import os
 from twilio.rest import Client
-# -------------------
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import RetrieveUpdateAPIView
+from .serializers import UserProfileSerializer
 from .serializers import SendOTPSerializer, VerifyOTPSerializer
 
 def get_tokens_for_user(user):
@@ -71,7 +70,22 @@ class SendOTPView(APIView):
 
         return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
 
+class UserProfileView(RetrieveUpdateAPIView):
+    """
+    A protected view for getting and updating the
+    logged-in user's profile (name and address).
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
 
+    def get_object(self):
+        # Returns the user object for the logged-in user
+        return self.request.user
+
+    def perform_update(self, serializer):
+        # When they update, we mark their profile as complete
+        serializer.save(is_profile_complete=True)
+        
 class VerifyOTPView(APIView):
     permission_classes = []
     serializer_class = VerifyOTPSerializer
@@ -91,7 +105,7 @@ class VerifyOTPView(APIView):
 
         user, created = CustomUser.objects.get_or_create(
             phone_number=phone_number,
-            defaults={'name': 'New User'}
+            defaults={'name': ''}
         )
 
         cache.delete(phone_number)
@@ -103,5 +117,6 @@ class VerifyOTPView(APIView):
             'user': {
                 'phone_number': user.phone_number,
                 'name': user.name,
+                'is_profile_complete': user.is_profile_complete,
             }
         }, status=status.HTTP_200_OK)
