@@ -179,11 +179,7 @@ class ChangePasswordView(APIView):
         return Response({'message': 'Password updated successfully!'}, status=status.HTTP_200_OK)
 
 class ResetPasswordView(APIView):
-    """
-    Resets password using a Firebase Token as proof of identity.
-    Used when a user forgets their password.
-    """
-    permission_classes = [] # Public, because they can't log in yet
+    permission_classes = [] 
 
     def post(self, request):
         firebase_token = request.data.get('firebase_token')
@@ -195,10 +191,16 @@ class ResetPasswordView(APIView):
         try:
             # 1. Verify identity with Firebase
             decoded_token = firebase_auth.verify_id_token(firebase_token)
-            phone_number = decoded_token.get('phone_number')
+            phone_number = decoded_token.get('phone_number') # Returns +918688...
 
-            # 2. Find the user
-            user = User.objects.get(phone_number=phone_number)
+            # 2. Try to find the user (Handle both formats)
+            try:
+                # Try exact match (e.g., +918688...)
+                user = User.objects.get(phone_number=phone_number)
+            except User.DoesNotExist:
+                # Try without +91 (e.g., 8688...)
+                raw_number = phone_number.replace('+91', '') 
+                user = User.objects.get(phone_number=raw_number)
 
             # 3. Reset the password
             user.set_password(new_password)
@@ -207,7 +209,7 @@ class ResetPasswordView(APIView):
             return Response({'message': 'Password reset successfully. Please login.'}, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'User with this number does not exist.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             print(f"Reset Error: {e}")
-            return Response({'error': 'Invalid token or reset failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': f'Reset failed: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
