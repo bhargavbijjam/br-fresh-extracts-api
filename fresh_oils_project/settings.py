@@ -13,7 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import dj_database_url
-
+import firebase_admin
+from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -173,3 +174,15 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'https://br-fresh-extracts-webapp.onrender.com',
 ]
+
+if not firebase_admin._apps:
+    key_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
+    if key_path:
+        try:
+            cred = credentials.Certificate(key_path)
+            firebase_admin.initialize_app(cred)
+            print(f"✅ Firebase initialized using: {key_path}")
+        except Exception as e:
+            print(f"❌ Firebase init failed: {e}")
+    else:
+        print("⚠️ FIREBASE_SERVICE_ACCOUNT_KEY_PATH variable not found.")
