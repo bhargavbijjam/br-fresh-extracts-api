@@ -1,6 +1,8 @@
 # accounts/views.py
 
 from rest_framework.views import APIView
+from rest_framework.generics import RetrieveUpdateAPIView # <-- Added back
+from rest_framework.permissions import IsAuthenticated # <-- Added back
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -8,6 +10,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 from firebase_admin import auth as firebase_auth
 from rest_framework.exceptions import AuthenticationFailed
+
+# Import your serializers (make sure UserProfileSerializer is in serializers.py)
+from .serializers import UserProfileSerializer 
 
 User = get_user_model()
 
@@ -31,8 +36,6 @@ class CheckUserView(APIView):
         if not phone:
             return Response({'error': 'Phone number required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Ensure phone has country code for consistency if needed, 
-        # but usually we store what the frontend sends (+91...)
         exists = User.objects.filter(phone_number=phone).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
 
@@ -94,7 +97,6 @@ class FirebaseRegisterView(APIView):
 
         try:
             # A. Verify the token with Google
-            # This ensures they actually own the phone number
             decoded_token = firebase_auth.verify_id_token(firebase_token)
             phone_number = decoded_token.get('phone_number')
 
@@ -132,3 +134,21 @@ class FirebaseRegisterView(APIView):
         except Exception as e:
             print(f"Registration Error: {e}")
             return Response({'error': 'Invalid token or registration failed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- 4. USER PROFILE VIEW (RESTORED) ---
+class UserProfileView(RetrieveUpdateAPIView):
+    """
+    A protected view for getting and updating the
+    logged-in user's profile (name and address).
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        # Returns the user object for the logged-in user
+        return self.request.user
+
+    def perform_update(self, serializer):
+        # When they update, we mark their profile as complete
+        serializer.save(is_profile_complete=True)
