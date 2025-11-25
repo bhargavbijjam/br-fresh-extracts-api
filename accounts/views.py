@@ -152,3 +152,28 @@ class UserProfileView(RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         # When they update, we mark their profile as complete
         serializer.save(is_profile_complete=True)
+
+class ChangePasswordView(APIView):
+    """
+    Allows a logged-in user to change their password.
+    Requires 'old_password' and 'new_password'.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return Response({'error': 'Both fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Verify the old password
+        if not user.check_password(old_password):
+            return Response({'error': 'Wrong old password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Set the new password
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'message': 'Password updated successfully!'}, status=status.HTTP_200_OK)
