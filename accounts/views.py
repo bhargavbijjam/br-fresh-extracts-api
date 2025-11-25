@@ -177,3 +177,37 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({'message': 'Password updated successfully!'}, status=status.HTTP_200_OK)
+
+class ResetPasswordView(APIView):
+    """
+    Resets password using a Firebase Token as proof of identity.
+    Used when a user forgets their password.
+    """
+    permission_classes = [] # Public, because they can't log in yet
+
+    def post(self, request):
+        firebase_token = request.data.get('firebase_token')
+        new_password = request.data.get('new_password')
+
+        if not firebase_token or not new_password:
+            return Response({'error': 'Token and password required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 1. Verify identity with Firebase
+            decoded_token = firebase_auth.verify_id_token(firebase_token)
+            phone_number = decoded_token.get('phone_number')
+
+            # 2. Find the user
+            user = User.objects.get(phone_number=phone_number)
+
+            # 3. Reset the password
+            user.set_password(new_password)
+            user.save()
+
+            return Response({'message': 'Password reset successfully. Please login.'}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Reset Error: {e}")
+            return Response({'error': 'Invalid token or reset failed.'}, status=status.HTTP_400_BAD_REQUEST)
