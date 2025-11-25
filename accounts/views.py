@@ -4,18 +4,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser
-import random
-from django.core.cache import cache
-import os
-from twilio.rest import Client
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.generics import RetrieveUpdateAPIView
-from .serializers import UserProfileSerializer
-from .serializers import SendOTPSerializer, VerifyOTPSerializer
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from firebase_admin import auth as firebase_auth
 from rest_framework.exceptions import AuthenticationFailed
 
+User = get_user_model()
+
+# Helper to generate tokens
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
@@ -23,149 +19,116 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-class SendOTPView(APIView):
-    permission_classes = [] 
-    serializer_class = SendOTPSerializer
+# --- 1. CHECK USER VIEW ---
+class CheckUserView(APIView):
+    """
+    Checks if a phone number already exists in our database.
+    """
+    permission_classes = [] # Public endpoint
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        phone = request.data.get('phone_number')
+        if not phone:
+            return Response({'error': 'Phone number required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure phone has country code for consistency if needed, 
+        # but usually we store what the frontend sends (+91...)
+        exists = User.objects.filter(phone_number=phone).exists()
+        return Response({'exists': exists}, status=status.HTTP_200_OK)
 
-        phone_number = serializer.validated_data['phone_number']
 
-        # 1. Generate OTP
-        otp = str(random.randint(1000, 9999))
-
-        # 2. Save OTP to cache for 5 minutes
-        cache.set(phone_number, otp, timeout=300) 
-
-        # --- 3. SEND OTP WITH TWILIO ---
-        try:
-            # Get Twilio credentials from environment
-            account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-            auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-            from_number = os.environ.get('TWILIO_FROM_NUMBER')
-
-            if not all([account_sid, auth_token, from_number]):
-                print("--- TWILIO ENV VARS NOT SET. PRINTING OTP ---")
-                print(f"--- OTP for {phone_number} is: {otp} ---")
-            else:
-                client = Client(account_sid, auth_token)
-
-                # IMPORTANT: Add the country code (e.g., +91 for India)
-                # if it's not already on the phone number.
-                to_number = f"+91{phone_number}" 
-
-                message = client.messages.create(
-                    body=f"Your BR Fresh Extracts OTP is: {otp}",
-                    from_=from_number,
-                    to=to_number
-                )
-                print(f"OTP sent to {to_number} (SID: {message.sid})")
-
-        except Exception as e:
-            print(f"Error sending SMS: {e}")
-            # Don't crash, just print OTP for testing
-            print(f"--- OTP for {phone_number} is: {otp} ---")
-        # -------------------------------
-
-        return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
-
-class UserProfileView(RetrieveUpdateAPIView):
+# --- 2. PASSWORD LOGIN VIEW ---
+class PasswordLoginView(APIView):
     """
-    A protected view for getting and updating the
-    logged-in user's profile (name and address).
+    Standard login using Phone Number and Password.
     """
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserProfileSerializer
-
-    def get_object(self):
-        # Returns the user object for the logged-in user
-        return self.request.user
-
-    def perform_update(self, serializer):
-        # When they update, we mark their profile as complete
-        serializer.save(is_profile_complete=True)
-
-class VerifyOTPView(APIView):
     permission_classes = []
-    serializer_class = VerifyOTPSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        phone = request.data.get('phone_number')
+        password = request.data.get('password')
 
-        phone_number = serializer.validated_data['phone_number']
-        otp_received = serializer.validated_data['otp']
-
-        otp_stored = cache.get(phone_number)
-
-        if otp_stored != otp_received:
-            return Response({'error': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user, created = CustomUser.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={'name': ''}
-        )
-
-        cache.delete(phone_number)
-        tokens = get_tokens_for_user(user)
-
-        return Response({
-            'message': 'Login successful!',
-            'tokens': tokens,
-            'user': {
-                'phone_number': user.phone_number,
-                'name': user.name,
-                'is_profile_complete': user.is_profile_complete,
-            }
-        }, status=status.HTTP_200_OK)
-    
-class FirebaseLoginView(APIView):
-    """
-    Handles user login/signup using a Firebase ID Token.
-    Receives a Firebase token, verifies it, finds or creates a user,
-    and returns our own Django JWT.
-    """
-    permission_classes = [] # This endpoint is public
-
-    def post(self, request):
-        # 1. Get the Firebase token from the React app
-        firebase_token = request.data.get('token')
-        if not firebase_token:
-            raise AuthenticationFailed('No Firebase token provided.')
+        if not phone or not password:
+            return Response({'error': 'Both phone and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 2. Verify the token with Google
+            user = User.objects.get(phone_number=phone)
+            
+            # Check the password
+            if user.check_password(password):
+                if not user.is_active:
+                    return Response({'error': 'Account disabled'}, status=status.HTTP_403_FORBIDDEN)
+                
+                tokens = get_tokens_for_user(user)
+                return Response({
+                    'tokens': tokens,
+                    'user': {
+                        'phone_number': user.phone_number,
+                        'name': user.name,
+                        # We assume profile is complete if they have a password
+                        'is_profile_complete': True 
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
+                
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# --- 3. REGISTER VIEW (With Firebase Verification) ---
+class FirebaseRegisterView(APIView):
+    """
+    Verifies Firebase Token (proof of phone ownership),
+    then creates a new user with Name and Password.
+    """
+    permission_classes = []
+
+    def post(self, request):
+        firebase_token = request.data.get('firebase_token')
+        name = request.data.get('name')
+        password = request.data.get('password')
+
+        if not firebase_token or not password:
+            return Response({'error': 'Token and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # A. Verify the token with Google
+            # This ensures they actually own the phone number
             decoded_token = firebase_auth.verify_id_token(firebase_token)
             phone_number = decoded_token.get('phone_number')
 
             if not phone_number:
-                raise AuthenticationFailed('Invalid Firebase token.')
+                raise AuthenticationFailed('Invalid Firebase token: No phone found.')
 
-            # 3. Find or create the user in our database
-            # We use phone_number (e.g., +918688294228) as the unique ID
-            user, created = CustomUser.objects.get_or_create(
+            # B. Check if user already exists (Safety check)
+            if User.objects.filter(phone_number=phone_number).exists():
+                return Response({'error': 'User already exists. Please login.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # C. Create the user
+            user = User.objects.create(
                 phone_number=phone_number,
-                defaults={'name': ''} # We'll let them set this in the "Complete Profile" step
+                name=name,
+                is_profile_complete=True # Since they just filled it out
             )
+            
+            # D. Set the password (hashes it securely)
+            user.set_password(password)
+            user.save()
 
-            # 4. Generate our own Django JWTs for them
+            # E. Generate Tokens
             tokens = get_tokens_for_user(user)
 
-            # 5. Send back our tokens and their profile status
             return Response({
-                'message': 'Login successful!',
+                'message': 'Account created successfully!',
                 'tokens': tokens,
                 'user': {
                     'phone_number': user.phone_number,
                     'name': user.name,
-                    'is_profile_complete': user.is_profile_complete
+                    'is_profile_complete': True
                 }
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"Firebase auth error: {e}")
-            raise AuthenticationFailed('Invalid Firebase token or user lookup failed.')
+            print(f"Registration Error: {e}")
+            return Response({'error': 'Invalid token or registration failed.'}, status=status.HTTP_400_BAD_REQUEST)
