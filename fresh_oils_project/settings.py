@@ -139,34 +139,24 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- STATIC FILES & STORAGE ---
-
+# --- STATIC FILES CONFIGURATION ---
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Cloudinary Config
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
-}
-
-# STORAGE CONFIGURATION
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # --- CHANGED: Removed 'Manifest' ---
-        # This backend compresses files but DOES NOT check for missing links.
-        # It is much safer for deployment.
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        # CHANGED: Use the standard Django storage. 
+        # This DOES NOT compress or map files, avoiding all build errors.
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-# Legacy setting must match the new one above
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Legacy setting must match
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
