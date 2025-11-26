@@ -6,7 +6,7 @@ set -o errexit
 pip install -r requirements.txt
 
 # Collect static files (for WhiteNoise)
-python manage.py collectstatic --no-input
+python manage.py collectstatic --no-input --clear
 
 # Run database migrations
 python manage.py migrate

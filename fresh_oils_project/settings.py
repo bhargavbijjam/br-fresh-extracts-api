@@ -140,22 +140,30 @@ USE_TZ = True
 
 
 # --- STATIC FILES CONFIGURATION ---
+
 STATIC_URL = 'static/'
+
+# This is where files are collected to. Render looks here.
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# This configuration tells Django to use Whitenoise to serve files
 STORAGES = {
     "default": {
+        # Media files (Product Images) -> Cloudinary
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # CHANGED: Use the standard Django storage. 
-        # This DOES NOT compress or map files, avoiding all build errors.
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        # Static files (CSS/JS) -> Whitenoise
+        # We use CompressedStaticFilesStorage because it is safer than Manifest
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
-# Legacy setting must match
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+# Legacy setting for compatibility
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
+# Prevents build crashes if a file is missing
+WHITENOISE_MANIFEST_STRICT = False
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
