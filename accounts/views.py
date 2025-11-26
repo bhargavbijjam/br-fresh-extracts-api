@@ -20,17 +20,32 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-# --- 1. CHECK USER VIEW ---
+# --- 1. CHECK USER VIEW (Fixed) ---
 class CheckUserView(APIView):
+    """
+    Checks if a phone number exists. Handles both +91 and raw numbers.
+    """
     permission_classes = [] 
 
     def post(self, request):
         phone = request.data.get('phone_number')
         if not phone:
             return Response({'error': 'Phone number required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 1. Check exactly as sent
+        exists = User.objects.filter(phone_number=phone).exists()
+        
+        # 2. If not found, check alternatives (Smart Check)
         if not exists:
-            formatted_phone = f"+91{phone}"
-            exists = User.objects.filter(phone_number=formatted_phone).exists()
+            if phone.startswith('+91'):
+                # Try without country code
+                raw_number = phone.replace('+91', '')
+                exists = User.objects.filter(phone_number=raw_number).exists()
+            else:
+                # Try adding country code
+                formatted_number = f"+91{phone}"
+                exists = User.objects.filter(phone_number=formatted_number).exists()
+
         return Response({'exists': exists}, status=status.HTTP_200_OK)
 
 # --- 2. PASSWORD LOGIN VIEW ---
@@ -45,7 +60,16 @@ class PasswordLoginView(APIView):
             return Response({'error': 'Both phone and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(phone_number=phone)
+            # Try to find the user (Handle both formats)
+            try:
+                user = User.objects.get(phone_number=phone)
+            except User.DoesNotExist:
+                # Try alternate format
+                if phone.startswith('+91'):
+                    user = User.objects.get(phone_number=phone.replace('+91', ''))
+                else:
+                    user = User.objects.get(phone_number=f"+91{phone}")
+
             if user.check_password(password):
                 if not user.is_active:
                     return Response({'error': 'Account disabled'}, status=status.HTTP_403_FORBIDDEN)
@@ -64,7 +88,7 @@ class PasswordLoginView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-# --- 3. REGISTER VIEW (Firebase Verification) ---
+# --- 3. REGISTER VIEW ---
 class FirebaseRegisterView(APIView):
     permission_classes = []
 
@@ -106,6 +130,7 @@ class FirebaseRegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            print(f"Reg Error: {e}")
             return Response({'error': 'Registration failed.'}, status=status.HTTP_400_BAD_REQUEST)
 
 # --- 4. RESET PASSWORD VIEW ---
