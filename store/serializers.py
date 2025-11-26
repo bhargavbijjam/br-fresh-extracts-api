@@ -2,26 +2,10 @@ from rest_framework import serializers
 from .models import Product,Order, OrderItem,Category
 
 class ProductSerializer(serializers.ModelSerializer):
-    """
-    Serializes a Product object into JSON.
-    """
-
-    # This will show the category's name (from its __str__ method)
-    # instead of just showing its ID.
     category = serializers.StringRelatedField()
-
     class Meta:
         model = Product
-        # These are the fields that will be sent to the frontend
-        fields = [
-            'id', 
-            'name', 
-            'description', 
-            'category', 
-            'price', 
-            'image_url',
-            'in_stock',
-        ]
+        fields = ['id', 'name', 'description', 'category', 'price', 'image', 'in_stock'] # 'image', not 'image_url'
     
 class OrderItemSerializer(serializers.ModelSerializer):
     """

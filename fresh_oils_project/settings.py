@@ -37,7 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django_cloudinary_storage',
     'django.contrib.staticfiles',
+    'cloudinary',
+    
     
     # Third Party Apps
     'corsheaders',
@@ -138,23 +141,36 @@ USE_TZ = True
 
 # --- STATIC FILES CONFIGURATION ---
 
+# --- STATIC & MEDIA FILES ---
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Whitenoise Storage
+# 1. Cloudinary Config
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
+}
+
+# 2. Storage Configuration
 STORAGES = {
+    # Media (Images) -> Cloudinary
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
+    # Static (CSS/JS) -> Whitenoise
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
-# CRITICAL FIX: Prevents build crash when .map files are missing in libraries
-WHITENOISE_MANIFEST_STRICT = False
+# 3. CRITICAL FIX: Legacy setting required by django-cloudinary-storage
+# This prevents the "AttributeError" you saw last time.
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# -------------------------------------------
+# 4. Whitenoise Strict Mode (Keep False to prevent map errors)
+WHITENOISE_MANIFEST_STRICT = False
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
