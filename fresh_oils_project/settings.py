@@ -140,27 +140,31 @@ USE_TZ = True
 
 
 # --- STATIC FILES & STORAGE ---
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Cloudinary Config
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
 }
 
+# STORAGE CONFIGURATION
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # CHANGED: We removed 'Manifest' from the class name.
-        # This version compresses files but IGNORES missing map files.
+        # --- CHANGED: Removed 'Manifest' ---
+        # This backend compresses files but DOES NOT check for missing links.
+        # It is much safer for deployment.
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
-# Update the legacy setting to match
+# Legacy setting must match the new one above
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
