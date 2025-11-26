@@ -28,8 +28,9 @@ class CheckUserView(APIView):
         phone = request.data.get('phone_number')
         if not phone:
             return Response({'error': 'Phone number required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        exists = User.objects.filter(phone_number=phone).exists()
+        if not exists:
+            formatted_phone = f"+91{phone}"
+            exists = User.objects.filter(phone_number=formatted_phone).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
 
 # --- 2. PASSWORD LOGIN VIEW ---
