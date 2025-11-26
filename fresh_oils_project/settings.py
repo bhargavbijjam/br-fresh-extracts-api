@@ -143,7 +143,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Cloudinary Keys (For Product Images)
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
@@ -151,23 +150,18 @@ CLOUDINARY_STORAGE = {
 }
 
 STORAGES = {
-    # Media (Product Images) -> Cloudinary
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
-    # Static (CSS/JS) -> Whitenoise
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # CHANGED: We removed 'Manifest' from the class name.
+        # This version compresses files but IGNORES missing map files.
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
-# Legacy setting (Keep this to prevent compatibility errors)
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# --- CRITICAL FIX ---
-# This tells Whitenoise: "If a .map file is missing, DO NOT CRASH."
-WHITENOISE_MANIFEST_STRICT = False
-# --------------------
+# Update the legacy setting to match
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
