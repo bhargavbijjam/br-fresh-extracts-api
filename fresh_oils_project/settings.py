@@ -27,6 +27,7 @@ ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS.append('api.brfreshextracts.co.in') # Custom Domain
 
 
 # --- INSTALLED APPS ---
@@ -37,20 +38,22 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    
+    # Storage & Static Files (Order matters!)
     'cloudinary_storage',
     'django.contrib.staticfiles',
     'cloudinary',
     
-    
-    # Third Party Apps
     'corsheaders',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'drf_spectacular',
     
     # My Apps
     'accounts.apps.AccountsConfig',
     'store.apps.StoreConfig',
+    
+    # 3rd Party Apps
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'drf_spectacular',
 ]
 
 REST_FRAMEWORK = {
@@ -139,32 +142,33 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- STATIC FILES CONFIGURATION ---
+# --- STATIC FILES & STORAGE CONFIGURATION ---
 
 STATIC_URL = 'static/'
-
-# This is where files are collected to. Render looks here.
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# This configuration tells Django to use Whitenoise to serve files
+# Cloudinary Config (This was missing in your paste!)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
+}
+
 STORAGES = {
     "default": {
-        # Media files (Product Images) -> Cloudinary
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        # Static files (CSS/JS) -> Whitenoise
-        # We use CompressedStaticFilesStorage because it is safer than Manifest
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        # We use the safe Django storage to avoid Whitenoise build crashes
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-# Legacy setting for compatibility
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+# Legacy setting must match
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# Prevents build crashes if a file is missing
-WHITENOISE_MANIFEST_STRICT = False
-
+# -------------------------------------------
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -177,11 +181,16 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'https://br-fresh-extracts-webapp.onrender.com', # Your live frontend
     'https://www.brfreshextracts.co.in',
+    'https://brfreshextracts.co.in',
 ]
 CORS_ALLOW_ALL_METHODS = True
 CORS_ALLOW_HEADERS = [
     'authorization',
     'content-type',
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://br-fresh-extracts-api.onrender.com',
+    'https://api.brfreshextracts.co.in', 
 ]
 
 
