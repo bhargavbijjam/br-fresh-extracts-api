@@ -5,8 +5,8 @@ set -o errexit
 # Install dependencies
 pip install -r requirements.txt
 
-# Collect static files (for WhiteNoise)
-python manage.py collectstatic --no-input
+# Collect static files (Ignore missing map files to fix Whitenoise error)
+python manage.py collectstatic --no-input --ignore *.map
 
 # Run database migrations
 python manage.py migrate
@@ -23,23 +23,18 @@ password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
 
 if phone and password:
     try:
-        # Try to find the user
         user = User.objects.get(phone_number=phone)
-        
-        # If found, update password AND staff status
         user.set_password(password)
         user.is_staff = True
         user.is_superuser = True
         user.save()
         print(f"Superuser '{phone}' found. Password and staff status updated.")
-        
     except User.DoesNotExist:
-        # If not found, create a new one
         print(f"Superuser '{phone}' not found. Creating new superuser...")
         User.objects.create_superuser(
             phone_number=phone,
             password=password,
-            name='Admin'  # <-- This fixes the bug
+            name='Admin'
         )
         print('Superuser created successfully.')
     except Exception as e:
