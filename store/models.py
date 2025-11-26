@@ -18,6 +18,7 @@ class Product(models.Model):
     image_url = models.URLField(max_length=1024, blank=True, null=True) # Or use ImageField
     in_stock = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(upload_to='products/')
     
     def __str__(self):
         return self.name
