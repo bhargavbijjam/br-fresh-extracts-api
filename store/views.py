@@ -1,7 +1,7 @@
 # store/views.py
 
 from django.db.models import Sum
-from rest_framework.generics import ListAPIView,ListCreateAPIView
+from rest_framework.generics import ListAPIView,ListCreateAPIView,RetrieveUpdateDestroyAPIView,RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
 from rest_framework.response import Response
@@ -81,3 +81,35 @@ class AdminOrderListView(ListAPIView):
     permission_classes = [IsAdminUser]
     queryset = Order.objects.all().order_by('-created_at')
     serializer_class = AdminOrderSerializer
+
+class AdminOrderUpdateView(RetrieveUpdateAPIView):
+    """
+    Allows Admin to update specific fields of an order (like status).
+    """
+    permission_classes = [IsAdminUser]
+    serializer_class = AdminOrderSerializer
+    queryset = Order.objects.all()
+    # We only want to allow updating 'status' ideally, 
+    # but using the main serializer is fine for now.
+
+
+# --- 2. ADMIN PRODUCT MANAGEMENT (CRUD) ---
+
+class AdminProductListCreateView(ListCreateAPIView):
+    """
+    GET: List all products (for admin table)
+    POST: Create a new product
+    """
+    permission_classes = [IsAdminUser]
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all().order_by('-created_at')
+
+class AdminProductDetailView(RetrieveUpdateDestroyAPIView):
+    """
+    GET: Fetch one product
+    PUT/PATCH: Update product
+    DELETE: Delete product
+    """
+    permission_classes = [IsAdminUser]
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all()
