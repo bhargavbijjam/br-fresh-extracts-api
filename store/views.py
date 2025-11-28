@@ -1,7 +1,9 @@
 # store/views.py
 
+from django.db.models import Sum
 from rest_framework.generics import ListAPIView,ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
 from .models import Product,Order
 from .serializers import ProductSerializer, OrderSerializer, CreateOrderSerializer
 
@@ -43,3 +45,29 @@ class OrderListCreateView(ListCreateAPIView):
         # Pass the request (which contains the user) 
         # to the serializer's create method
         serializer.save(user=self.request.user)
+
+class AdminAnalyticsView(APIView):
+    """
+    Returns business metrics for the Admin Dashboard.
+    Only accessible by Staff/Superusers.
+    """
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # 1. Calculate Totals
+        total_orders = Order.objects.count()
+        
+        # Sum the 'total_amount' column (handle None if no orders exist)
+        revenue_data = Order.objects.aggregate(Sum('total_amount'))
+        total_revenue = revenue_data['total_amount__sum'] or 0
+        
+        # Count orders by status
+        pending_orders = Order.objects.filter(status='Pending').count()
+        completed_orders = Order.objects.filter(status='Delivered').count()
+
+        return Response({
+            'total_orders': total_orders,
+            'total_revenue': total_revenue,
+            'pending_orders': pending_orders,
+            'completed_orders': completed_orders,
+        })
