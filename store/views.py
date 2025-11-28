@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny,IsAdminUser
 from rest_framework.response import Response
 from .models import Product,Order
 from .serializers import ProductSerializer, OrderSerializer, CreateOrderSerializer
+from .serializers import AdminOrderSerializer
 
 class ProductListView(ListAPIView):
     """
@@ -72,3 +73,11 @@ class AdminAnalyticsView(APIView):
             'pending_orders': pending_orders,
             'completed_orders': completed_orders,
         })
+
+class AdminOrderListView(ListAPIView):
+    """
+    Returns ALL orders for the Admin Portal.
+    """
+    permission_classes = [IsAdminUser]
+    queryset = Order.objects.all().order_by('-created_at')
+    serializer_class = AdminOrderSerializer

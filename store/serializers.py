@@ -104,3 +104,30 @@ class CreateOrderSerializer(serializers.Serializer):
         order.save()
 
         return order
+
+class AdminOrderSerializer(serializers.ModelSerializer):
+    # Pull details from the related User object
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_phone = serializers.CharField(source='user.phone_number', read_only=True)
+    user_address = serializers.CharField(source='user.address', read_only=True)
+    user_location_lat = serializers.CharField(source='user.latitude', read_only=True)
+    user_location_lng = serializers.CharField(source='user.longitude', read_only=True)
+    
+    # Reuse the existing item serializer
+    items = OrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 
+            'user_name', 
+            'user_phone', 
+            'user_address', 
+            'user_location_lat',
+            'user_location_lng',
+            'total_amount', 
+            'status', 
+            'payment_mode', 
+            'created_at', 
+            'items'
+        ]
