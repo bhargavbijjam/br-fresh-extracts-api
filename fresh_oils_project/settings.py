@@ -168,7 +168,6 @@ STORAGES = {
 
 # Legacy setting must match
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # -------------------------------------------
 
