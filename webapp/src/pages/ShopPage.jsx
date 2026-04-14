@@ -9,8 +9,12 @@ function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
 
+  const variants = (product.variants && product.variants.length) ? product.variants : [{ size: product.weight, price: product.price }];
+  const [selectedVariant, setSelectedVariant] = useState(variants[0]);
+  const [qty, setQty] = useState(1);
+
   const handleAdd = () => {
-    addToCart(product);
+    addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -33,11 +37,36 @@ function ProductCard({ product }) {
       <div className="p-5 flex flex-col flex-1">
         <p className="text-xs text-terra-500 font-medium mb-1 tracking-wide">{product.category}</p>
         <h3 className="font-serif text-lg text-forest-700 mb-1 leading-tight">{product.name}</h3>
-        <p className="text-xs text-warm-brown/60 mb-4 line-clamp-2 flex-1">{product.description}</p>
+        <p className="text-xs text-warm-brown/60 mb-3 line-clamp-2">{product.description}</p>
+
+        {/* Variant & Qty selectors */}
+        <div className="flex gap-2 mb-2">
+          <select
+            value={selectedVariant.size}
+            onChange={e => setSelectedVariant(variants.find(v => v.size === e.target.value))}
+            className="flex-1 text-xs border border-sand-300 rounded-lg px-2 py-1.5 bg-white text-warm-brown focus:outline-none focus:border-terra-400"
+          >
+            {variants.map(v => (
+              <option key={v.size} value={v.size}>{v.size}</option>
+            ))}
+          </select>
+          <select
+            value={qty}
+            onChange={e => setQty(Number(e.target.value))}
+            className="w-16 text-xs border border-sand-300 rounded-lg px-2 py-1.5 bg-white text-warm-brown focus:outline-none focus:border-terra-400"
+          >
+            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+
+        <p className="text-xs text-warm-brown/50 mb-3">
+          Total: <span className="text-terra-500 font-semibold">₹{(selectedVariant.price * qty).toLocaleString()}</span>
+        </p>
+
         <div className="flex items-center justify-between mt-auto">
           <div>
-            <span className="font-serif text-xl text-terra-500 font-semibold">₹{product.price}</span>
-            <span className="text-warm-brown/50 text-xs ml-1">/ {product.weight}</span>
+            <span className="font-serif text-xl text-terra-500 font-semibold">₹{selectedVariant.price}</span>
+            <span className="text-warm-brown/50 text-xs ml-1">/ {selectedVariant.size}</span>
           </div>
           <button
             onClick={handleAdd}

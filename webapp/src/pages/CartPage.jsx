@@ -4,7 +4,7 @@ import AnimatedSection from '../components/ui/AnimatedSection';
 import { useCart } from '../contexts/CartContext';
 
 export default function CartPage() {
-  const { items, removeFromCart, updateQty, total, clearCart } = useCart();
+  const { items, removeFromCart, updateQty, total, clearCart, cartKey } = useCart();
   const navigate = useNavigate();
 
   if (items.length === 0) {
@@ -38,7 +38,7 @@ export default function CartPage() {
           {/* Items list */}
           <div className="flex-1 space-y-4">
             {items.map((item, i) => (
-              <AnimatedSection key={item.id} delay={i * 60}>
+              <AnimatedSection key={cartKey(item)} delay={i * 60}>
                 <div className="bg-white rounded-2xl p-5 border border-sand-200 flex gap-4 shadow-sm">
                   <img src={item.image} alt={item.name}
                     className="w-20 h-20 rounded-xl object-cover shrink-0"
@@ -51,19 +51,19 @@ export default function CartPage() {
                         <h3 className="font-serif text-forest-700 text-lg leading-tight">{item.name}</h3>
                         <p className="text-warm-brown/50 text-xs mt-0.5">{item.weight}</p>
                       </div>
-                      <button onClick={() => removeFromCart(item.id)}
+                      <button onClick={() => removeFromCart(cartKey(item))}
                         className="text-warm-brown/30 hover:text-red-400 transition-colors shrink-0 p-1">
                         <Trash2 size={15} />
                       </button>
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-2 bg-ivory rounded-full px-1 py-1">
-                        <button onClick={() => updateQty(item.id, item.qty - 1)}
+                        <button onClick={() => updateQty(cartKey(item), item.qty - 1)}
                           className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand-200 transition-colors">
                           <Minus size={13} />
                         </button>
                         <span className="text-sm font-medium w-6 text-center">{item.qty}</span>
-                        <button onClick={() => updateQty(item.id, item.qty + 1)}
+                        <button onClick={() => updateQty(cartKey(item), item.qty + 1)}
                           className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-sand-200 transition-colors">
                           <Plus size={13} />
                         </button>

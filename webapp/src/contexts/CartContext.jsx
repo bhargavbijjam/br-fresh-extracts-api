@@ -13,22 +13,27 @@ export function CartProvider({ children }) {
     localStorage.setItem('so_cart', JSON.stringify(updated));
   };
 
+  // cartKey = unique per product+variant combination
+  const cartKey = (product) => `${product.id}__${product.weight}`;
+
   const addToCart = (product) => {
+    const qty = product.qty || 1;
+    const key = cartKey(product);
     setItems(prev => {
-      const existing = prev.find(i => i.id === product.id);
+      const existing = prev.find(i => cartKey(i) === key);
       const updated = existing
-        ? prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
-        : [...prev, { ...product, qty: 1 }];
+        ? prev.map(i => cartKey(i) === key ? { ...i, qty: i.qty + qty } : i)
+        : [...prev, { ...product, qty }];
       localStorage.setItem('so_cart', JSON.stringify(updated));
       return updated;
     });
   };
 
-  const removeFromCart = (id) => save(items.filter(i => i.id !== id));
+  const removeFromCart = (key) => save(items.filter(i => cartKey(i) !== key));
 
-  const updateQty = (id, qty) => {
-    if (qty < 1) { removeFromCart(id); return; }
-    save(items.map(i => i.id === id ? { ...i, qty } : i));
+  const updateQty = (key, qty) => {
+    if (qty < 1) { removeFromCart(key); return; }
+    save(items.map(i => cartKey(i) === key ? { ...i, qty } : i));
   };
 
   const clearCart = () => { setItems([]); localStorage.removeItem('so_cart'); };
@@ -37,7 +42,7 @@ export function CartProvider({ children }) {
   const count = items.reduce((s, i) => s + i.qty, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, clearCart, total, count }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQty, clearCart, total, count, cartKey }}>
       {children}
     </CartContext.Provider>
   );

@@ -2,7 +2,7 @@ import { Pencil, Plus, Save, Star, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useStore } from '../../contexts/StoreContext';
 
-const empty = { name: '', category: '', price: '', weight: '', image: '', description: '', featured: false };
+const empty = { name: '', category: '', price: '', weight: '', image: '', description: '', featured: false, variants: [{ size: '', price: '' }] };
 
 export default function AdminProducts() {
   const { store, addProduct, updateProduct, deleteProduct } = useStore();
@@ -13,16 +13,26 @@ export default function AdminProducts() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const setVariant = (i, k, v) => setForm(f => {
+    const variants = f.variants.map((vr, idx) => idx === i ? { ...vr, [k]: v } : vr);
+    return { ...f, variants };
+  });
+  const addVariant    = () => setForm(f => ({ ...f, variants: [...f.variants, { size: '', price: '' }] }));
+  const removeVariant = (i) => setForm(f => ({ ...f, variants: f.variants.filter((_, idx) => idx !== i) }));
+
   const openAdd  = () => { setForm(empty); setEditing(null); setShowForm(true); };
   const openEdit = (p) => {
-    setForm({ name: p.name, category: p.category, price: String(p.price), weight: p.weight, image: p.image, description: p.description, featured: p.featured });
+    const variants = (p.variants && p.variants.length) ? p.variants.map(v => ({ size: v.size, price: String(v.price) })) : [{ size: p.weight, price: String(p.price) }];
+    setForm({ name: p.name, category: p.category, price: String(p.price), weight: p.weight, image: p.image, description: p.description, featured: p.featured, variants });
     setEditing(p.id); setShowForm(true);
   };
   const cancel = () => { setShowForm(false); setEditing(null); };
 
   const handleSave = (e) => {
     e.preventDefault();
-    const data = { ...form, price: Number(form.price) };
+    const variants = form.variants.filter(v => v.size && v.price).map(v => ({ size: v.size, price: Number(v.price) }));
+    const firstVariant = variants[0] || { size: form.weight, price: Number(form.price) };
+    const data = { ...form, price: firstVariant.price, weight: firstVariant.size, variants };
     if (editing) updateProduct(editing, data);
     else addProduct(data);
     cancel();
@@ -66,13 +76,27 @@ export default function AdminProducts() {
                 {store.categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="label">Price (₹)</label>
-              <input type="number" required min="1" className="input-field" value={form.price} onChange={e => set('price', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Weight / Volume</label>
-              <input type="text" required className="input-field" value={form.weight} onChange={e => set('weight', e.target.value)} placeholder="e.g. 100g, 250ml" />
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className="label mb-0">Variants (Size &amp; Price)</label>
+                <button type="button" onClick={addVariant} className="text-xs text-terra-500 hover:text-terra-600 flex items-center gap-1 font-medium">
+                  <Plus size={12} /> Add variant
+                </button>
+              </div>
+              <div className="space-y-2">
+                {form.variants.map((v, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input type="text" placeholder="Size (e.g. 500g, 1kg)" required className="input-field flex-1 text-sm py-2" value={v.size} onChange={e => setVariant(i, 'size', e.target.value)} />
+                    <input type="number" placeholder="Price (₹)" required min="1" className="input-field w-32 text-sm py-2" value={v.price} onChange={e => setVariant(i, 'price', e.target.value)} />
+                    {form.variants.length > 1 && (
+                      <button type="button" onClick={() => removeVariant(i)} className="p-1.5 text-warm-brown/40 hover:text-red-400 transition-colors">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-warm-brown/40 mt-1">First variant is the default shown on product card.</p>
             </div>
             <div className="md:col-span-2">
               <label className="label">Description</label>
