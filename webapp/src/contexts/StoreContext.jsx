@@ -12,6 +12,9 @@ const defaultData = {
     instagram: 'https://instagram.com',
     facebook: 'https://facebook.com',
     twitter: 'https://twitter.com',
+    shippingMode: 'flat',
+    shippingCharge: 79,
+    freeShippingAbove: 499,
   },
   hero: {
     title: 'Pure from Nature,\nCrafted for You',
@@ -61,6 +64,8 @@ function load() {
       ...stored,
       settings: { ...defaultData.settings, ...(stored.settings || {}) },
     };
+    if (merged.settings.shippingCharge !== undefined) merged.settings.shippingCharge = Number(merged.settings.shippingCharge);
+    if (merged.settings.freeShippingAbove !== undefined) merged.settings.freeShippingAbove = Number(merged.settings.freeShippingAbove);
     // Replace old placeholder values with real defaults
     if (merged.settings.whatsappNumber === '919999999999') merged.settings.whatsappNumber = defaultData.settings.whatsappNumber;
     if (merged.settings.phone === '+91 99999 99999') merged.settings.phone = defaultData.settings.phone;

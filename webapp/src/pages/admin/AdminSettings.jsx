@@ -1,4 +1,4 @@
-import { Building2, Clock, Facebook, Globe, Instagram, Mail, MessageCircle, Phone, Save, Twitter } from 'lucide-react';
+import { Building2, Clock, Facebook, Globe, Instagram, Mail, MessageCircle, Package, Phone, Save, Twitter } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../contexts/StoreContext';
 
@@ -145,6 +145,59 @@ export default function AdminSettings() {
           onChange={set('hours')}
           placeholder="Mon – Sat: 10am – 7pm"
         />
+      </Section>
+
+      {/* Shipping */}
+      <Section title="Shipping Settings">
+        <div>
+          <label className="block text-sm font-medium text-forest-700 mb-1.5">Shipping Mode</label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            {[
+              { value: 'flat',    label: 'Flat Rate',       desc: 'Fixed charge + free above a threshold' },
+              { value: 'free',    label: 'Always Free',     desc: 'No shipping charge ever' },
+              { value: 'discuss', label: 'To Be Discussed', desc: 'Show “To be discussed” at checkout' },
+            ].map(opt => (
+              <label key={opt.value}
+                className={`flex-1 flex items-start gap-3 border rounded-xl p-4 cursor-pointer transition-all ${
+                  form.shippingMode === opt.value
+                    ? 'border-terra-400 bg-terra-50'
+                    : 'border-sand-200 hover:border-terra-200'
+                }`}>
+                <input type="radio" name="shippingMode" value={opt.value}
+                  checked={form.shippingMode === opt.value}
+                  onChange={set('shippingMode')}
+                  className="mt-0.5 accent-terra-500" />
+                <div>
+                  <p className="text-sm font-medium text-forest-700">{opt.label}</p>
+                  <p className="text-xs text-warm-brown/50 mt-0.5">{opt.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+        {form.shippingMode === 'flat' && (
+          <div className="grid grid-cols-2 gap-4">
+            <Field
+              label="Shipping Charge (₹)"
+              id="shippingCharge"
+              icon={Package}
+              value={form.shippingCharge}
+              onChange={set('shippingCharge')}
+              type="number" min="0"
+              placeholder="79"
+              hint="Charged when order is below the free threshold."
+            />
+            <Field
+              label="Free Shipping Above (₹)"
+              id="freeShippingAbove"
+              value={form.freeShippingAbove}
+              onChange={set('freeShippingAbove')}
+              type="number" min="0"
+              placeholder="499"
+              hint="Set 0 to never offer free shipping."
+            />
+          </div>
+        )}
       </Section>
 
       {/* Social */}

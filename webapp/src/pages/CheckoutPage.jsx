@@ -24,7 +24,13 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef();
 
-  const shipping = total >= 499 ? 0 : 79;
+  const shippingMode = store.settings?.shippingMode || 'flat';
+  const shippingCharge = Number(store.settings?.shippingCharge ?? 79);
+  const freeShippingAbove = Number(store.settings?.freeShippingAbove ?? 499);
+  const shipping = shippingMode === 'free' ? 0
+    : shippingMode === 'discuss' ? 0
+    : (freeShippingAbove > 0 && total >= freeShippingAbove) ? 0
+    : shippingCharge;
   const grandTotal = total + shipping;
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -99,7 +105,8 @@ export default function CheckoutPage() {
       orderLines,
       '',
       `*Subtotal:* ₹${total.toLocaleString()}`,
-      `*Shipping:* ${shipping === 0 ? 'Free' : '₹' + shipping}`,
+      `*Shipping:* ${shippingMode === 'discuss' ? 'To be discussed' : shipping === 0 ? 'Free' : '₹' + shipping}`,
+      shippingMode === 'discuss' ? '📦 Shipping charges will be confirmed before dispatch.' : null,
       `*Grand Total:* ₹${grandTotal.toLocaleString()}`,
       '',
       '📎 Payment screenshot attached below.',
@@ -285,7 +292,9 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span className={shipping === 0 ? 'text-forest-600 font-medium' : 'font-medium'}>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+                    <span className={shipping === 0 && shippingMode !== 'discuss' ? 'text-forest-600 font-medium' : shippingMode === 'discuss' ? 'text-amber-600 font-medium' : 'font-medium'}>
+                      {shippingMode === 'discuss' ? 'To be discussed' : shipping === 0 ? 'Free' : `₹${shipping}`}
+                    </span>
                   </div>
                   <div className="border-t border-sand-100 pt-3 flex justify-between font-semibold text-forest-700">
                     <span className="font-serif text-lg">Total</span>
