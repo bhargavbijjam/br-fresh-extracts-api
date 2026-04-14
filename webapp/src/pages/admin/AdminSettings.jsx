@@ -1,5 +1,5 @@
 import { Building2, Clock, Facebook, Globe, Instagram, Mail, MessageCircle, Phone, Save, Twitter } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../contexts/StoreContext';
 
 const Field = ({ label, id, icon: Icon, hint, ...props }) => (
@@ -32,13 +32,28 @@ export default function AdminSettings() {
   const { store, updateSettings } = useStore();
   const [form, setForm] = useState({ ...store.settings });
   const [saved, setSaved] = useState(false);
+  const saveTimer = useRef(null);
 
   // Keep form in sync with store (e.g. after page reload or external update)
   useEffect(() => { setForm({ ...store.settings }); }, [store.settings]);
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key) => (e) => {
+    const value = e.target.value;
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      // Auto-save with debounce
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        updateSettings(next);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }, 600);
+      return next;
+    });
+  };
 
   const handleSave = () => {
+    clearTimeout(saveTimer.current);
     updateSettings(form);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
