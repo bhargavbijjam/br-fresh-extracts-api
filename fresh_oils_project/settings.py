@@ -111,9 +111,9 @@ DATABASES = {
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES['default'] = dj_database_url.config(
-        default=DATABASE_URL, 
+        default=DATABASE_URL,
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=False
     )
 
 # Cache settings
@@ -182,6 +182,11 @@ CORS_ALLOWED_ORIGINS = [
     'https://br-fresh-extracts-webapp.onrender.com', # Your live frontend
     'https://www.brfreshextracts.co.in',
     'https://brfreshextracts.co.in',
+]
+
+# Allow any Vercel deployment URL (preview + production)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://.*\.vercel\.app$',
 ]
 CORS_ALLOW_ALL_METHODS = True
 CORS_ALLOW_HEADERS = [
