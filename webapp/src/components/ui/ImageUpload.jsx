@@ -1,7 +1,8 @@
 import { Link, Loader2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api/';
+const _raw = import.meta.env.VITE_API_URL || '/api/';
+const API_URL = _raw.endsWith('/') ? _raw : _raw + '/';
 const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
 
 /**
