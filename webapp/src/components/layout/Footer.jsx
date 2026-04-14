@@ -1,7 +1,10 @@
 import { Facebook, Instagram, Leaf, Mail, MessageCircle, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useStore } from '../../contexts/StoreContext';
 
 export default function Footer() {
+  const { store } = useStore();
+  const s = store.settings;
   return (
     <footer className="bg-forest-800 text-cream/80">
       {/* Leaf divider */}
@@ -21,15 +24,15 @@ export default function Footer() {
           <p className="text-cream/60 text-sm leading-relaxed max-w-xs">
             Pure, certified organic products sourced directly from Indian farms. No compromise on quality, no compromise on nature.
           </p>
-          <p className="mt-4 text-xs text-cream/40 tracking-widest uppercase">New Delhi, India</p>
+          <p className="mt-4 text-xs text-cream/40 tracking-widest uppercase">{s.address}</p>
           <div className="flex items-center gap-3 mt-6">
-            <a href="https://instagram.com" target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
+            <a href={s.instagram} target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
               <Instagram size={16} />
             </a>
-            <a href="https://facebook.com" target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
+            <a href={s.facebook} target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
               <Facebook size={16} />
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
+            <a href={s.twitter} target="_blank" rel="noreferrer" className="p-2 rounded-full border border-forest-600 hover:border-terra-400 hover:text-terra-400 transition-colors">
               <Twitter size={16} />
             </a>
           </div>
@@ -50,21 +53,21 @@ export default function Footer() {
           <p className="font-serif text-cream text-lg mb-4">Contact</p>
           <ul className="space-y-3 text-sm">
             <li>
-              <a href="https://wa.me/919999999999" target="_blank" rel="noreferrer"
+              <a href={`https://wa.me/${s.whatsappNumber}`} target="_blank" rel="noreferrer"
                 className="flex items-center gap-2 hover:text-terra-400 transition-colors">
-                <MessageCircle size={15} /> +91 99999 99999
+                <MessageCircle size={15} /> {s.phone}
               </a>
             </li>
             <li>
-              <a href="mailto:hello@brfreshextracts.in"
+              <a href={`mailto:${s.email}`}
                 className="flex items-center gap-2 hover:text-terra-400 transition-colors">
-                <Mail size={15} /> hello@brfreshextracts.in
+                <Mail size={15} /> {s.email}
               </a>
             </li>
           </ul>
           <div className="mt-6 text-xs text-cream/40 space-y-1">
-            <p>Mon – Sat: 10am – 7pm</p>
-            <p className="uppercase tracking-widest">FSSAI No. 10019012000123</p>
+            <p>{s.hours}</p>
+            <p className="uppercase tracking-widest">FSSAI No. {s.fssai}</p>
           </div>
         </div>
       </div>

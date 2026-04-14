@@ -15,6 +15,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminHero from './pages/admin/AdminHero';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminProducts from './pages/admin/AdminProducts';
+import AdminSettings from './pages/admin/AdminSettings';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminWhyUs from './pages/admin/AdminWhyUs';
 
@@ -42,6 +43,7 @@ export default function App() {
                 <Route path="products"     element={<AdminProducts />} />
                 <Route path="testimonials" element={<AdminTestimonials />} />
                 <Route path="why-us"       element={<AdminWhyUs />} />
+                <Route path="settings"     element={<AdminSettings />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

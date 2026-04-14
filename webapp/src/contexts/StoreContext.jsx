@@ -2,7 +2,16 @@ import { createContext, useContext, useState } from 'react';
 
 const defaultData = {
   settings: {
-    whatsappNumber: '919999999999', // include country code, no +
+    whatsappNumber: '919999999999',
+    phone: '+91 99999 99999',
+    email: 'hello@brfreshextracts.in',
+    upiId: 'brfreshextracts@upi',
+    address: 'New Delhi, India',
+    fssai: '10019012000123',
+    hours: 'Mon – Sat: 10am – 7pm',
+    instagram: 'https://instagram.com',
+    facebook: 'https://facebook.com',
+    twitter: 'https://twitter.com',
   },
   hero: {
     title: 'Pure from Nature,\nCrafted for You',

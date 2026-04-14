@@ -7,7 +7,8 @@ import {
     Leaf,
     LogOut, Menu,
     MessageSquare,
-    Package
+    Package,
+    Settings
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/admin/products',     label: 'Products',     icon: Package },
   { to: '/admin/testimonials', label: 'Testimonials', icon: MessageSquare },
   { to: '/admin/why-us',       label: 'Why Us',       icon: CheckSquare },
+  { to: '/admin/settings',     label: 'Settings',     icon: Settings },
 ];
 
 export default function AdminLayout() {

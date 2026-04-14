@@ -214,7 +214,7 @@ export default function CheckoutPage() {
                 <div className="bg-white rounded-2xl border border-sand-200 p-6 shadow-sm">
                   <h2 className="font-serif text-xl text-forest-700 mb-2">Payment Screenshot</h2>
                   <p className="text-xs text-warm-brown/60 mb-5">
-                    Pay to our UPI ID: <span className="font-medium text-forest-700">brfreshextracts@upi</span> &nbsp;|&nbsp; Amount: <span className="font-semibold text-terra-500">₹{grandTotal.toLocaleString()}</span>
+                    Pay to our UPI ID: <span className="font-medium text-forest-700">{store.settings.upiId}</span> &nbsp;|&nbsp; Amount: <span className="font-semibold text-terra-500">₹{grandTotal.toLocaleString()}</span>
                     <br />Then upload the screenshot below for confirmation.
                   </p>
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
