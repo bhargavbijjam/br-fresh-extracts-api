@@ -71,12 +71,12 @@ export default function CheckoutPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!paymentFile) { alert('Please upload your payment screenshot to continue.'); return; }
     setSubmitting(true);
 
-    const whatsapp = (store.settings?.whatsappNumber || '919999999999').replace(/\D/g, '');
+    const whatsapp = (store.settings?.whatsappNumber || '916305352434').replace(/\D/g, '');
     const mapsLink = location ? `https://maps.google.com/?q=${location.lat},${location.lng}` : '';
 
     const orderLines = items.map(item =>
@@ -102,11 +102,34 @@ export default function CheckoutPage() {
       `*Shipping:* ${shipping === 0 ? 'Free' : '₹' + shipping}`,
       `*Grand Total:* ₹${grandTotal.toLocaleString()}`,
       '',
-      '✅ Payment screenshot attached by customer.',
+      '📎 Payment screenshot attached below.',
     ].filter(l => l !== null).join('\n');
 
-    const url = `https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    // Try Web Share API first (works on Android/mobile — shares file + text to WhatsApp)
+    const canShareFile = navigator.canShare && navigator.canShare({ files: [paymentFile] });
+    if (canShareFile) {
+      try {
+        await navigator.share({ files: [paymentFile], text: msg });
+        clearCart();
+        navigate('/');
+        setSubmitting(false);
+        return;
+      } catch (err) {
+        // User cancelled share or error — fall through to wa.me
+        if (err.name === 'AbortError') { setSubmitting(false); return; }
+      }
+    }
+
+    // Fallback: open wa.me text link, then trigger screenshot download so user can attach it manually
+    const waUrl = `https://wa.me/${whatsapp}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+
+    // Auto-download the screenshot so user can easily attach it in WhatsApp
+    const dlLink = document.createElement('a');
+    dlLink.href = paymentPreview;
+    dlLink.download = `payment-${Date.now()}.jpg`;
+    dlLink.click();
+
     clearCart();
     navigate('/');
     setSubmitting(false);
@@ -214,7 +237,7 @@ export default function CheckoutPage() {
                 <div className="bg-white rounded-2xl border border-sand-200 p-6 shadow-sm">
                   <h2 className="font-serif text-xl text-forest-700 mb-2">Payment Screenshot</h2>
                   <p className="text-xs text-warm-brown/60 mb-5">
-                    Pay to our UPI ID: <span className="font-medium text-forest-700">{store.settings.upiId}</span> &nbsp;|&nbsp; Amount: <span className="font-semibold text-terra-500">₹{grandTotal.toLocaleString()}</span>
+                    Pay to our UPI ID: <span className="font-medium text-forest-700">{store.settings?.upiId}</span> &nbsp;|&nbsp; Amount: <span className="font-semibold text-terra-500">₹{grandTotal.toLocaleString()}</span>
                     <br />Then upload the screenshot below for confirmation.
                   </p>
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
@@ -280,7 +303,7 @@ export default function CheckoutPage() {
                   )}
                   Confirm Order on WhatsApp
                 </button>
-                <p className="text-xs text-center text-warm-brown/40 mt-3">WhatsApp will open with your order details pre-filled.</p>
+                <p className="text-xs text-center text-warm-brown/40 mt-3">Your order details + payment screenshot will be sent via WhatsApp.</p>
                 <Link to="/cart" className="block text-center text-sm text-warm-brown/50 hover:text-terra-500 transition-colors mt-3">
                   ← Back to Cart
                 </Link>

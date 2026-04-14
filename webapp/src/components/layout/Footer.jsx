@@ -4,7 +4,7 @@ import { useStore } from '../../contexts/StoreContext';
 
 export default function Footer() {
   const { store } = useStore();
-  const s = store.settings;
+  const s = store.settings || {};
   return (
     <footer className="bg-forest-800 text-cream/80">
       {/* Leaf divider */}
