@@ -1,105 +1,52 @@
-// src/App.jsx
-import React, { useState, createContext, useContext, useEffect } from 'react'; // Added useEffect/useContext here too just in case
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; 
-import api from './api'; // Make sure this is imported for RequireProfile
-import AuthPage from './pages/AuthPage';
-import StorePage from './pages/StorePage';
-import MyOrdersPage from './pages/MyOrdersPage';
-import CompleteProfilePage from './pages/CompleteProfilePage';
-import ChangePasswordPage from './pages/ChangePasswordPage'; // <-- ADD THIS LINE HERE!
-export const AuthContext = createContext();
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
+import { StoreProvider } from './contexts/StoreContext';
 
-const useAuth = () => useContext(AuthContext);
+import MainLayout from './components/layout/MainLayout';
+import CartPage from './pages/CartPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import ShopPage from './pages/ShopPage';
 
-function App() {
-  const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken'));
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminHero from './pages/admin/AdminHero';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminTestimonials from './pages/admin/AdminTestimonials';
+import AdminWhyUs from './pages/admin/AdminWhyUs';
 
-  const setToken = (token) => {
-    if (token) {
-      localStorage.setItem('accessToken', token);
-    } else {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    }
-    setAccessToken(token);
-  };
-
+export default function App() {
   return (
-    <AuthContext.Provider value={{ accessToken, setToken }}>
-      {/* 2. Add the Toaster component here */}
-      <Toaster 
-        position="top-center"
-        toastOptions={{
-          duration: 3000,
-        }}
-      />
-      <div id="recaptcha-container"></div>
-      <Routes>
-        <Route
-          path="/"
-          element={accessToken ? <StorePage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/login"
-          element={!accessToken ? <AuthPage /> : <Navigate to="/" />}
-        />
-        <Route 
-          path="/my-orders"
-          element={accessToken ? <MyOrdersPage /> : <Navigate to="/login" />}
-        />
-        <Route 
-          path="/complete-profile" 
-          element={accessToken ? <CompleteProfilePage /> : <Navigate to="/login" />} />
-        <Route
-          path="/change-password"
-          element={accessToken ? <ChangePasswordPage /> : <Navigate to="/login" />}
-        />
-      </Routes>
-      
-    </AuthContext.Provider>
+    <Router>
+      <AuthProvider>
+        <StoreProvider>
+          <CartProvider>
+            <Routes>
+              {/* Public routes with Navbar + Footer */}
+              <Route element={<MainLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="shop" element={<ShopPage />} />
+                <Route path="cart" element={<CartPage />} />
+                <Route path="login" element={<LoginPage />} />
+              </Route>
+
+              {/* Admin routes — own layout, no main navbar */}
+              <Route path="admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="hero"         element={<AdminHero />} />
+                <Route path="categories"   element={<AdminCategories />} />
+                <Route path="products"     element={<AdminProducts />} />
+                <Route path="testimonials" element={<AdminTestimonials />} />
+                <Route path="why-us"       element={<AdminWhyUs />} />
+              </Route>
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </CartProvider>
+        </StoreProvider>
+      </AuthProvider>
+    </Router>
   );
 }
-
-function RequireProfile({ children }) {
-  const { accessToken } = useAuth();
-  const location = useLocation();
-  const [isProfileComplete, setIsProfileComplete] = useState(null); // null = loading
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    // Check the user's profile status
-    const checkProfile = async () => {
-      try {
-        const response = await api.get('/auth/profile/');
-        setIsProfileComplete(response.data.is_profile_complete);
-      } catch (e) {
-        console.error("Could not check profile", e);
-        setIsProfileComplete(false); // Failsafe
-      }
-      setLoading(false);
-    };
-    checkProfile();
-  }, [accessToken]);
-
-  if (loading) {
-    return <div className="p-8">Loading user profile...</div>; // Or a spinner
-  }
-
-  if (!accessToken) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (!isProfileComplete) {
-    // Not complete? Force them to the profile page.
-    return <Navigate to="/complete-profile" state={{ from: location }} replace />;
-  }
-
-  return children; // They are logged in AND profile is complete
-}
-export default App;

@@ -8,9 +8,6 @@ pip install -r requirements.txt
 # Collect static files (for WhiteNoise)
 python manage.py collectstatic --no-input --clear
 
-# Run database migrations
-python manage.py migrate
-
 # Create OR Update superuser
 echo "Running superuser script..."
 cat <<EOF | python manage.py shell
