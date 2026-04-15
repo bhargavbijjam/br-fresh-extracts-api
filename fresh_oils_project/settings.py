@@ -8,6 +8,7 @@ import os
 import dj_database_url
 import firebase_admin
 from firebase_admin import credentials
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -189,9 +190,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r'^https://.*\.vercel\.app$',
 ]
 CORS_ALLOW_ALL_METHODS = True
-CORS_ALLOW_HEADERS = [
-    'authorization',
-    'content-type',
+CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-upload-secret',
 ]
 CSRF_TRUSTED_ORIGINS = [
