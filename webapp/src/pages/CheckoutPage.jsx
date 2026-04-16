@@ -321,18 +321,18 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">{t('checkout.fullName')}</label>
-                      <input required className="input-field" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Rahul Verma" />
+                      <input required className="input-field" value={form.name} onChange={e => set('name', e.target.value)} placeholder={t('checkout.namePlaceholder')} />
                     </div>
                     <div>
                       <label className="label">{t('checkout.phone')}</label>
-                      <input required type="tel" pattern="[6-9][0-9]{9}" className="input-field" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="9876543210" readOnly={Boolean(verifiedPhone)} />
+                      <input required type="tel" pattern="[6-9][0-9]{9}" className="input-field" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder={t('checkout.phonePlaceholder')} readOnly={Boolean(verifiedPhone)} />
                       {verifiedPhone && (
                         <p className="text-[11px] text-warm-brown/50 mt-1">{t('checkout.phoneLocked')}</p>
                       )}
                     </div>
                     <div className="md:col-span-2">
                       <label className="label">{t('checkout.email')}</label>
-                      <input type="email" className="input-field" value={form.email} onChange={e => set('email', e.target.value)} placeholder="rahul@email.com" />
+                      <input type="email" className="input-field" value={form.email} onChange={e => set('email', e.target.value)} placeholder={t('checkout.emailPlaceholder')} />
                     </div>
                   </div>
                 </div>
@@ -368,19 +368,19 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="label">{t('checkout.addressLine')}</label>
-                      <input required className="input-field" value={form.address} onChange={e => set('address', e.target.value)} placeholder="House no, Street, Area" />
+                      <input required className="input-field" value={form.address} onChange={e => set('address', e.target.value)} placeholder={t('checkout.addressPlaceholder')} />
                     </div>
                     <div>
                       <label className="label">{t('checkout.city')}</label>
-                      <input required className="input-field" value={form.city} onChange={e => set('city', e.target.value)} placeholder="Bangalore" />
+                      <input required className="input-field" value={form.city} onChange={e => set('city', e.target.value)} placeholder={t('checkout.cityPlaceholder')} />
                     </div>
                     <div>
                       <label className="label">{t('checkout.state')}</label>
-                      <input required className="input-field" value={form.state} onChange={e => set('state', e.target.value)} placeholder="Karnataka" />
+                      <input required className="input-field" value={form.state} onChange={e => set('state', e.target.value)} placeholder={t('checkout.statePlaceholder')} />
                     </div>
                     <div>
                       <label className="label">{t('checkout.pincode')}</label>
-                      <input required pattern="[1-9][0-9]{5}" className="input-field" value={form.pincode} onChange={e => set('pincode', e.target.value)} placeholder="560001" />
+                      <input required pattern="[1-9][0-9]{5}" className="input-field" value={form.pincode} onChange={e => set('pincode', e.target.value)} placeholder={t('checkout.pincodePlaceholder')} />
                     </div>
                   </div>
                 </div>
@@ -450,7 +450,7 @@ export default function CheckoutPage() {
                       <div>
                         <p className="text-sm font-semibold text-forest-700">{t('checkout.agentTitle')}</p>
                         <p className="text-xs text-warm-brown/60 mt-0.5">
-                          {t('checkout.agentDesc', { phone: form.phone || 'your registered number' })}
+                          {t('checkout.agentDesc', { phone: form.phone || t('checkout.registeredNumber') })}
                         </p>
                       </div>
                     </div>

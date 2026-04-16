@@ -133,7 +133,7 @@ export default function LoginPage() {
             {mode === 'customer' && !isLogin && (
               <div>
                 <label className="label">{t('login.fullName')}</label>
-                <input className="input-field" type="text" placeholder="Your name" required
+                <input className="input-field" type="text" placeholder={t('login.namePlaceholder')} required
                   value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
             )}
@@ -149,7 +149,7 @@ export default function LoginPage() {
             {mode === 'customer' && !isLogin && (
               <div>
                 <label className="label">{t('login.emailOptional')}</label>
-                <input className="input-field" type="email" placeholder="you@example.com"
+                <input className="input-field" type="email" placeholder={t('login.emailPlaceholder')}
                   value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
             )}
@@ -157,7 +157,7 @@ export default function LoginPage() {
             {mode === 'customer' && otpSent && (
               <div>
                 <label className="label">{t('login.otpLabel')}</label>
-                <input className="input-field" type="text" inputMode="numeric" placeholder="123456" required
+                <input className="input-field" type="text" inputMode="numeric" placeholder={t('login.otpPlaceholder')} required
                   value={otp} onChange={e => setOtp(e.target.value)} />
                 <button type="button" onClick={async () => {
                   setError('');
@@ -176,13 +176,13 @@ export default function LoginPage() {
               <>
                 <div>
                   <label className="label">{t('login.adminEmail')}</label>
-                  <input className="input-field" type="email" placeholder="admin@example.com" required
+                  <input className="input-field" type="email" placeholder={t('login.adminEmailPlaceholder')} required
                     value={form.email} onChange={e => set('email', e.target.value)} />
                 </div>
                 <div>
                   <label className="label">{t('login.adminPassword')}</label>
                   <div className="relative">
-                    <input className="input-field pr-10" type={showPass ? 'text' : 'password'} placeholder="••••••••" required
+                    <input className="input-field pr-10" type={showPass ? 'text' : 'password'} placeholder={t('login.passwordPlaceholder')} required
                       value={form.password} onChange={e => set('password', e.target.value)} />
                     <button type="button" onClick={() => setShowPass(!showPass)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-brown/40 hover:text-warm-brown">
