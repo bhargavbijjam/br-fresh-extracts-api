@@ -1,10 +1,27 @@
-import { createContext, useContext, useState } from 'react';
+import { onAuthStateChanged, signInWithPhoneNumber, signOut } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { auth, buildRecaptchaVerifier, isFirebaseConfigured } from '../lib/firebase';
 
 const AuthContext = createContext(null);
 
 // Admin credentials
 const ADMIN_EMAIL = 'bijjambhargav@gmail.com';
 const ADMIN_PASS  = '985600@Bh';
+
+const normalizePhone = (value = '') => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+};
+const formatPhoneE164 = (value = '') => {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return '';
+  if (trimmed.startsWith('+')) return `+${digits}`;
+  if (digits.length === 10) return `+91${digits}`;
+  return `+${digits}`;
+};
+const isEmail = (value = '') => value.includes('@');
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -13,45 +30,117 @@ export function AuthProvider({ children }) {
       return s ? JSON.parse(s) : null;
     } catch { return null; }
   });
+  const [confirmationResult, setConfirmationResult] = useState(null);
 
-  const login = (email, password) => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
+  useEffect(() => {
+    if (!isFirebaseConfigured) return undefined;
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      try {
+        const current = JSON.parse(localStorage.getItem('so_user') || 'null');
+        if (current?.role === 'admin') return;
+      } catch { /* ignore */ }
+
+      if (!fbUser) {
+        setUser(null);
+        localStorage.removeItem('so_user');
+        return;
+      }
+
+      const phone = normalizePhone(fbUser.phoneNumber || '');
+      let profile = {};
+      try {
+        const profiles = JSON.parse(localStorage.getItem('so_customer_profiles') || '{}');
+        profile = profiles[phone] || {};
+      } catch { /* ignore */ }
+      const u = {
+        role: 'customer',
+        phone,
+        name: profile.name || 'Customer',
+        email: profile.email || '',
+      };
+      setUser(u);
+      localStorage.setItem('so_user', JSON.stringify(u));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const loginAdmin = async (email, password) => {
+    if (isEmail(email) && email === ADMIN_EMAIL && password === ADMIN_PASS) {
+      if (isFirebaseConfigured) {
+        try { await signOut(auth); } catch { /* ignore */ }
+      }
       const u = { email, role: 'admin', name: 'Admin' };
       setUser(u);
       localStorage.setItem('so_user', JSON.stringify(u));
       return { success: true, role: 'admin' };
     }
-    const customers = JSON.parse(localStorage.getItem('so_customers') || '[]');
-    const found = customers.find(c => c.email === email && c.password === password);
-    if (found) {
-      const u = { email: found.email, role: 'customer', name: found.name };
-      setUser(u);
-      localStorage.setItem('so_user', JSON.stringify(u));
-      return { success: true, role: 'customer' };
-    }
     return { success: false, error: 'Invalid email or password.' };
   };
 
-  const register = (name, email, password) => {
-    const customers = JSON.parse(localStorage.getItem('so_customers') || '[]');
-    if (customers.find(c => c.email === email)) {
-      return { success: false, error: 'This email is already registered.' };
+  const sendOtp = async (phone, containerId = 'recaptcha-container') => {
+    if (!isFirebaseConfigured) {
+      return { success: false, error: 'Firebase is not configured.' };
     }
-    customers.push({ name, email, password });
-    localStorage.setItem('so_customers', JSON.stringify(customers));
-    const u = { email, role: 'customer', name };
-    setUser(u);
-    localStorage.setItem('so_user', JSON.stringify(u));
-    return { success: true };
+    const normalized = normalizePhone(phone);
+    if (!normalized || normalized.length !== 10) {
+      return { success: false, error: 'Please enter a valid phone number.' };
+    }
+    try {
+      const verifier = buildRecaptchaVerifier(containerId, 'invisible');
+      const e164 = formatPhoneE164(normalized);
+      const result = await signInWithPhoneNumber(auth, e164, verifier);
+      setConfirmationResult(result);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err?.message || 'Failed to send OTP. Please try again.' };
+    }
   };
 
-  const logout = () => {
+  const verifyOtp = async (code, profile = {}) => {
+    if (!confirmationResult) {
+      return { success: false, error: 'Please request an OTP first.' };
+    }
+    try {
+      const result = await confirmationResult.confirm(code);
+      const phone = normalizePhone(result?.user?.phoneNumber || profile.phone || '');
+
+      const profiles = JSON.parse(localStorage.getItem('so_customer_profiles') || '{}');
+      const existing = profiles[phone] || {};
+      const nextProfile = {
+        name: profile.name?.trim() || existing.name || 'Customer',
+        email: profile.email?.trim() || existing.email || '',
+      };
+      profiles[phone] = nextProfile;
+      localStorage.setItem('so_customer_profiles', JSON.stringify(profiles));
+
+      const u = { role: 'customer', phone, name: nextProfile.name, email: nextProfile.email };
+      setUser(u);
+      localStorage.setItem('so_user', JSON.stringify(u));
+      setConfirmationResult(null);
+      return { success: true, role: 'customer' };
+    } catch (err) {
+      return { success: false, error: err?.message || 'Invalid OTP. Please try again.' };
+    }
+  };
+
+  const logout = async () => {
     setUser(null);
     localStorage.removeItem('so_user');
+    if (isFirebaseConfigured) {
+      try { await signOut(auth); } catch { /* ignore */ }
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{
+      user,
+      loginAdmin,
+      sendOtp,
+      verifyOtp,
+      logout,
+      isAdmin: user?.role === 'admin',
+      isFirebaseConfigured,
+    }}>
       {children}
     </AuthContext.Provider>
   );

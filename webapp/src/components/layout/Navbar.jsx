@@ -104,7 +104,7 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-sand-200 overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-sand-100">
                     <p className="text-xs text-warm-brown/60">Signed in as</p>
-                    <p className="text-sm font-medium text-forest-700 truncate">{user.email}</p>
+                    <p className="text-sm font-medium text-forest-700 truncate">{user.phone || user.email}</p>
                   </div>
                   {isAdmin && (
                     <Link to="/admin" onClick={() => setDropOpen(false)}

@@ -79,7 +79,7 @@ export default function AdminLayout() {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-forest-700 truncate">{user.name}</p>
-            <p className="text-xs text-warm-brown/50 truncate">{user.email}</p>
+            <p className="text-xs text-warm-brown/50 truncate">{user.email || user.phone}</p>
           </div>
         </div>
         <button onClick={handleLogout}

@@ -1,4 +1,5 @@
-const DEFAULT_URL = 'https://libretranslate.com/translate';
+const DEFAULT_URL = 'https://lingva.ml';
+const DEFAULT_LINGVA_BASE = 'https://lingva.ml';
 
 function extractTranslatedText(payload) {
   if (!payload) return '';
@@ -15,22 +16,31 @@ export async function translateText(req, res, next) {
       return res.status(400).json({ error: 'text and target are required' });
     }
 
+    const provider = (process.env.TRANSLATE_PROVIDER || '').toLowerCase();
     const apiUrl = process.env.TRANSLATE_API_URL || DEFAULT_URL;
     const apiKey = process.env.TRANSLATE_API_KEY || '';
 
-    const payload = {
-      q: text,
-      source,
-      target,
-      format: 'text',
-      api_key: apiKey || undefined,
-    };
+    let response;
+    if (provider === 'lingva' || apiUrl.includes('lingva')) {
+      const base = apiUrl.replace(/\/+$/, '') || DEFAULT_LINGVA_BASE;
+      const src = source || 'auto';
+      const endpoint = `${base}/api/v1/${encodeURIComponent(src)}/${encodeURIComponent(target)}/${encodeURIComponent(text)}`;
+      response = await fetch(endpoint, { method: 'GET' });
+    } else {
+      const payload = {
+        q: text,
+        source,
+        target,
+        format: 'text',
+        api_key: apiKey || undefined,
+      };
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
 
     if (!response.ok) {
       const msg = await response.text();

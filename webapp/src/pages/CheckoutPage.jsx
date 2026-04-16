@@ -1,7 +1,8 @@
 import { Camera, CheckCircle, CreditCard, Loader2, MapPin, Navigation, ShoppingBag, Truck } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AnimatedSection from '../components/ui/AnimatedSection';
+import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
@@ -9,6 +10,8 @@ import { useStore } from '../contexts/StoreContext';
 const _rawApi = import.meta.env.VITE_API_URL || '/api/';
 const API_URL = _rawApi.endsWith('/') ? _rawApi : _rawApi + '/';
 const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
+
+const normalizePhone = (value = '') => value.replace(/\D/g, '');
 
 const emptyForm = {
   name: '', phone: '', email: '',
@@ -51,6 +54,7 @@ export default function CheckoutPage() {
   const { items, total, clearCart, cartKey } = useCart();
   const { store } = useStore();
   const { t, tr, translateAsync } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState(emptyForm);
@@ -62,6 +66,18 @@ export default function CheckoutPage() {
   const [paymentPreview, setPaymentPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef();
+  const isLoggedInCustomer = user?.role === 'customer';
+  const verifiedPhone = user?.phone || '';
+
+  useEffect(() => {
+    if (!isLoggedInCustomer) return;
+    setForm((f) => ({
+      ...f,
+      name: f.name || user?.name || '',
+      phone: f.phone || verifiedPhone || '',
+      email: f.email || user?.email || '',
+    }));
+  }, [isLoggedInCustomer, user, verifiedPhone]);
 
   const shippingMode = store.settings?.shippingMode || 'flat';
   const shippingCharge = Number(store.settings?.shippingCharge ?? 79);
@@ -118,6 +134,17 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isLoggedInCustomer || !verifiedPhone) {
+      alert(t('checkout.loginRequiredBody'));
+      navigate('/login');
+      return;
+    }
+    const userPhone = normalizePhone(verifiedPhone);
+    const formPhone = normalizePhone(form.phone);
+    if (userPhone && formPhone && userPhone !== formPhone) {
+      alert(t('checkout.phoneMismatch'));
+      return;
+    }
     if (paymentMethod === 'UPI' && !paymentFile) {
       alert(t('checkout.uploadRequired'));
       return;
@@ -165,6 +192,15 @@ export default function CheckoutPage() {
       const existing = JSON.parse(localStorage.getItem('so_orders') || '[]');
       existing.unshift(order);
       localStorage.setItem('so_orders', JSON.stringify(existing));
+      const phoneKey = normalizePhone(form.phone);
+      if (phoneKey) {
+        const byPhone = JSON.parse(localStorage.getItem('so_orders_by_phone') || '{}');
+        const list = Array.isArray(byPhone[phoneKey]) ? byPhone[phoneKey] : [];
+        list.unshift(order);
+        byPhone[phoneKey] = list;
+        localStorage.setItem('so_orders_by_phone', JSON.stringify(byPhone));
+        localStorage.setItem(`so_orders_${phoneKey}`, JSON.stringify(list));
+      }
     } catch { /* quota issue — order still continues */ }
 
     // Build WhatsApp notification message
@@ -259,6 +295,19 @@ export default function CheckoutPage() {
           </div>
         </AnimatedSection>
 
+        {!isLoggedInCustomer && (
+          <div className="mb-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-start gap-3">
+            <div className="text-amber-600 mt-0.5">📱</div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-700">{t('checkout.loginRequiredTitle')}</p>
+              <p className="text-xs text-amber-700/70 mt-1">{t('checkout.loginRequiredBody')}</p>
+            </div>
+            <Link to="/login" className="text-xs font-semibold text-amber-700 underline">
+              {t('checkout.loginCta')}
+            </Link>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col lg:flex-row gap-8">
 
@@ -276,7 +325,10 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label className="label">{t('checkout.phone')}</label>
-                      <input required type="tel" pattern="[6-9][0-9]{9}" className="input-field" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="9876543210" />
+                      <input required type="tel" pattern="[6-9][0-9]{9}" className="input-field" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="9876543210" readOnly={Boolean(verifiedPhone)} />
+                      {verifiedPhone && (
+                        <p className="text-[11px] text-warm-brown/50 mt-1">{t('checkout.phoneLocked')}</p>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <label className="label">{t('checkout.email')}</label>

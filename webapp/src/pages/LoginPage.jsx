@@ -5,18 +5,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function LoginPage() {
+  const [mode, setMode] = useState('customer');
   const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login, register, user } = useAuth();
+  const { loginAdmin, sendOtp, verifyOtp, user, isFirebaseConfigured } = useAuth();
   const { t, tr } = useLanguage();
   const navigate = useNavigate();
 
   if (user) { navigate('/'); return null; }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const resetOtp = () => { setOtp(''); setOtpSent(false); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,13 +28,38 @@ export default function LoginPage() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 400)); // Small UX delay
 
-    const result = isLogin
-      ? login(form.email, form.password)
-      : register(form.name, form.email, form.password);
+    if (mode === 'admin') {
+      const result = await loginAdmin(form.email, form.password);
+      setLoading(false);
+      if (result.success) {
+        navigate('/admin');
+      } else {
+        setError(result.error);
+      }
+      return;
+    }
 
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      setError(t('login.firebaseMissing'));
+      return;
+    }
+
+    if (!otpSent) {
+      const result = await sendOtp(form.phone, 'recaptcha-container');
+      setLoading(false);
+      if (result.success) {
+        setOtpSent(true);
+      } else {
+        setError(result.error);
+      }
+      return;
+    }
+
+    const result = await verifyOtp(otp, { name: isLogin ? '' : form.name, email: form.email, phone: form.phone });
     setLoading(false);
     if (result.success) {
-      navigate(result.role === 'admin' ? '/admin' : '/');
+      navigate('/');
     } else {
       setError(result.error);
     }
@@ -65,39 +94,104 @@ export default function LoginPage() {
               <Leaf size={15} /> BR Fresh Extracts
             </Link>
             <h1 className="font-serif text-3xl text-forest-700 mb-2">
-              {isLogin ? t('login.welcome') : t('login.create')}
+              {mode === 'admin'
+                ? t('login.adminTitle')
+                : (isLogin ? t('login.welcome') : t('login.create'))}
             </h1>
             <p className="text-warm-brown/60 text-sm">
-              {isLogin ? t('login.signInSub') : t('login.signUpSub')}
+              {mode === 'admin'
+                ? t('login.adminSub')
+                : (isLogin ? t('login.signInSub') : t('login.signUpSub'))}
             </p>
           </div>
-
-
+          <div className="mb-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setMode('customer'); resetOtp(); setError(''); }}
+              className={`px-3 py-2 rounded-xl text-sm font-semibold border ${
+                mode === 'customer'
+                  ? 'bg-terra-500 text-white border-terra-500'
+                  : 'bg-white text-warm-brown border-sand-200'
+              }`}
+            >
+              {t('login.customerTab')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('admin'); resetOtp(); setError(''); }}
+              className={`px-3 py-2 rounded-xl text-sm font-semibold border ${
+                mode === 'admin'
+                  ? 'bg-forest-600 text-white border-forest-600'
+                  : 'bg-white text-warm-brown border-sand-200'
+              }`}
+            >
+              {t('login.adminTab')}
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {mode === 'customer' && !isLogin && (
               <div>
                 <label className="label">{t('login.fullName')}</label>
                 <input className="input-field" type="text" placeholder="Your name" required
                   value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
             )}
-            <div>
-              <label className="label">{t('login.email')}</label>
-              <input className="input-field" type="email" placeholder="you@example.com" required
-                value={form.email} onChange={e => set('email', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">{t('login.password')}</label>
-              <div className="relative">
-                <input className="input-field pr-10" type={showPass ? 'text' : 'password'} placeholder="••••••••" required
-                  value={form.password} onChange={e => set('password', e.target.value)} />
-                <button type="button" onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-brown/40 hover:text-warm-brown">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+
+            {mode === 'customer' && (
+              <div>
+                <label className="label">{t('login.phone')}</label>
+                <input className="input-field" type="tel" placeholder={t('login.phonePlaceholder')} required
+                  value={form.phone} onChange={e => set('phone', e.target.value)} />
+              </div>
+            )}
+
+            {mode === 'customer' && !isLogin && (
+              <div>
+                <label className="label">{t('login.emailOptional')}</label>
+                <input className="input-field" type="email" placeholder="you@example.com"
+                  value={form.email} onChange={e => set('email', e.target.value)} />
+              </div>
+            )}
+
+            {mode === 'customer' && otpSent && (
+              <div>
+                <label className="label">{t('login.otpLabel')}</label>
+                <input className="input-field" type="text" inputMode="numeric" placeholder="123456" required
+                  value={otp} onChange={e => setOtp(e.target.value)} />
+                <button type="button" onClick={async () => {
+                  setError('');
+                  setLoading(true);
+                  const result = await sendOtp(form.phone, 'recaptcha-container');
+                  setLoading(false);
+                  if (!result.success) setError(result.error);
+                }}
+                  className="text-xs text-terra-500 hover:underline mt-2">
+                  {t('login.resendOtp')}
                 </button>
               </div>
-            </div>
+            )}
+
+            {mode === 'admin' && (
+              <>
+                <div>
+                  <label className="label">{t('login.adminEmail')}</label>
+                  <input className="input-field" type="email" placeholder="admin@example.com" required
+                    value={form.email} onChange={e => set('email', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">{t('login.adminPassword')}</label>
+                  <div className="relative">
+                    <input className="input-field pr-10" type={showPass ? 'text' : 'password'} placeholder="••••••••" required
+                      value={form.password} onChange={e => set('password', e.target.value)} />
+                    <button type="button" onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-brown/40 hover:text-warm-brown">
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
             {error && <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">{tr(error)}</p>}
 
@@ -105,17 +199,31 @@ export default function LoginPage() {
               className="btn-primary w-full text-center flex items-center justify-center gap-2 mt-2">
               {loading ? (
                 <span className="inline-block w-4 h-4 border-2 border-cream/30 border-t-cream rounded-full animate-spin" />
-              ) : (isLogin ? t('login.signIn') : t('login.createAccount'))}
+              ) : (
+                mode === 'admin'
+                  ? t('login.adminSignIn')
+                  : (otpSent ? t('login.verifyOtp') : t('login.sendOtp'))
+              )}
             </button>
+
+            {mode === 'customer' && !isFirebaseConfigured && (
+              <p className="text-xs text-amber-700 bg-amber-50 px-4 py-2 rounded-lg">
+                {t('login.firebaseMissing')}
+              </p>
+            )}
+
+            <div id="recaptcha-container" className="hidden" />
           </form>
 
-          <p className="mt-6 text-center text-sm text-warm-brown/60">
-            {isLogin ? t('login.noAccount') : t('login.haveAccount')}
-            <button onClick={() => { setIsLogin(!isLogin); setError(''); }}
-              className="text-terra-500 hover:underline font-medium">
-              {isLogin ? t('login.signUpLink') : t('login.signInLink')}
-            </button>
-          </p>
+          {mode === 'customer' && (
+            <p className="mt-6 text-center text-sm text-warm-brown/60">
+              {isLogin ? t('login.noAccount') : t('login.haveAccount')}
+              <button onClick={() => { setIsLogin(!isLogin); setError(''); resetOtp(); }}
+                className="text-terra-500 hover:underline font-medium">
+                {isLogin ? t('login.signUpLink') : t('login.signInLink')}
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>
