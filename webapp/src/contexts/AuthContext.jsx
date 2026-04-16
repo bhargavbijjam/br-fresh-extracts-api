@@ -23,6 +23,28 @@ const formatPhoneE164 = (value = '') => {
 };
 const isEmail = (value = '') => value.includes('@');
 
+const friendlyAuthError = (err, fallback = 'Something went wrong. Please try again.') => {
+  const code = err?.code || '';
+  switch (code) {
+    case 'auth/invalid-phone-number':
+      return 'Enter a valid phone number.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please try again later.';
+    case 'auth/invalid-verification-code':
+      return 'OTP is incorrect. Please try again.';
+    case 'auth/verification-code-expired':
+      return 'OTP expired. Please request a new one.';
+    case 'auth/missing-verification-code':
+      return 'Please enter the OTP code.';
+    case 'auth/recaptcha-check-failed':
+      return 'Verification failed. Please try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Check your internet and try again.';
+    default:
+      return fallback;
+  }
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -87,12 +109,15 @@ export function AuthProvider({ children }) {
     }
     try {
       const verifier = buildRecaptchaVerifier(containerId, 'invisible');
+      if (!verifier) {
+        return { success: false, error: 'Verification failed. Please refresh and try again.' };
+      }
       const e164 = formatPhoneE164(normalized);
       const result = await signInWithPhoneNumber(auth, e164, verifier);
       setConfirmationResult(result);
       return { success: true };
     } catch (err) {
-      return { success: false, error: err?.message || 'Failed to send OTP. Please try again.' };
+      return { success: false, error: friendlyAuthError(err, 'Failed to send OTP. Please try again.') };
     }
   };
 
@@ -119,7 +144,7 @@ export function AuthProvider({ children }) {
       setConfirmationResult(null);
       return { success: true, role: 'customer' };
     } catch (err) {
-      return { success: false, error: err?.message || 'Invalid OTP. Please try again.' };
+      return { success: false, error: friendlyAuthError(err, 'OTP verification failed. Please try again.') };
     }
   };
 

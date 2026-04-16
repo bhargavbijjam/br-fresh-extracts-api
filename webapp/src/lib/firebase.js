@@ -28,6 +28,6 @@ export const buildRecaptchaVerifier = (containerId, mode = 'invisible') => {
     window.recaptchaVerifier.clear();
   }
   const size = mode === 'visible' ? 'normal' : 'invisible';
-  window.recaptchaVerifier = new RecaptchaVerifier(containerId, { size }, auth);
+  window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size });
   return window.recaptchaVerifier;
 };
