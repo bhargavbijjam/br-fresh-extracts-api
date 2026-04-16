@@ -81,7 +81,7 @@ export default function AdminProducts() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-serif text-2xl text-forest-700">Products</h1>
-          <p className="text-sm text-warm-brown/60 mt-1">{store.products.length} products total</p>
+          <p className="text-sm text-warm-brown/60 mt-1">{products.length} products total</p>
         </div>
         <button onClick={openAdd} className="btn-primary flex items-center gap-2 text-sm py-2">
           <Plus size={16} /> Add Product
