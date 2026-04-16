@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "migrate": "node scripts/migrate-postgres-to-mongo.js"
+    "migrate": "node scripts/migrate-postgres-to-mongo.js",
+    "seed": "node scripts/seed-demo-data.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
