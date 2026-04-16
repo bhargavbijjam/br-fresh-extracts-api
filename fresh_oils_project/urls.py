@@ -58,6 +58,20 @@ def health_check(request):
         checks['serializer'] = 'ok'
     except Exception as e:
         checks['serializer_error'] = traceback.format_exc()
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT app, name, applied FROM django_migrations WHERE app='store' ORDER BY name")
+            checks['store_migrations'] = [{'name': r[1], 'applied': str(r[2])} for r in cursor.fetchall()]
+    except Exception as e:
+        checks['migrations_error'] = str(e)
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='store_product' ORDER BY column_name")
+            checks['store_product_columns'] = [r[0] for r in cursor.fetchall()]
+    except Exception as e:
+        checks['columns_error'] = str(e)
     return JsonResponse(checks)
 
 urlpatterns = [
