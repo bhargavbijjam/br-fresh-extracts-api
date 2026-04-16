@@ -45,6 +45,19 @@ def health_check(request):
             checks['tables'] = [row[0] for row in cursor.fetchall()]
     except Exception as e:
         checks['tables_error'] = str(e)
+    try:
+        import store.views as sv
+        checks['views_import'] = 'ok'
+    except Exception as e:
+        checks['views_import_error'] = traceback.format_exc()
+    try:
+        from store.serializers import ProductSerializer
+        from store.models import Product
+        qs = Product.objects.all()[:1]
+        data = ProductSerializer(qs, many=True).data
+        checks['serializer'] = 'ok'
+    except Exception as e:
+        checks['serializer_error'] = traceback.format_exc()
     return JsonResponse(checks)
 
 urlpatterns = [

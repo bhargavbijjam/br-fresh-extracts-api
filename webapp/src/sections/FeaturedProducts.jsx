@@ -1,11 +1,16 @@
-import { ArrowRight, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AnimatedSection from '../components/ui/AnimatedSection';
 import { useCart } from '../contexts/CartContext';
 import { useStore } from '../contexts/StoreContext';
 
 function ProductCard({ product }) {
-  const { addToCart } = useCart();
+  const { items, addToCart, updateQty, cartKey } = useCart();
+
+  const key = cartKey(product);
+  const cartItem = items.find(i => cartKey(i) === key);
+  const inCart = !!cartItem;
+
   return (
     <div className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-sand-200 card-hover flex flex-col min-w-[240px] max-w-[280px]">
       <div className="relative overflow-hidden h-52">
@@ -27,12 +32,30 @@ function ProductCard({ product }) {
             <span className="font-serif text-xl text-terra-500 font-semibold">₹{product.price}</span>
             <span className="text-warm-brown/50 text-xs ml-1">/ {product.weight}</span>
           </div>
-          <button
-            onClick={() => addToCart(product)}
-            className="flex items-center gap-1.5 bg-forest-600 hover:bg-terra-500 text-cream text-xs font-medium px-3.5 py-2 rounded-full transition-colors duration-200"
-          >
-            <ShoppingCart size={13} /> Add
-          </button>
+          {inCart ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => updateQty(key, cartItem.qty - 1)}
+                className="w-7 h-7 rounded-full bg-sand-100 hover:bg-sand-200 flex items-center justify-center text-warm-brown transition-colors"
+              >
+                <Minus size={13} />
+              </button>
+              <span className="w-6 text-center text-sm font-semibold text-forest-700">{cartItem.qty}</span>
+              <button
+                onClick={() => updateQty(key, cartItem.qty + 1)}
+                className="w-7 h-7 rounded-full bg-terra-500 hover:bg-terra-600 flex items-center justify-center text-cream transition-colors"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => addToCart(product)}
+              className="flex items-center gap-1.5 bg-forest-600 hover:bg-terra-500 text-cream text-xs font-medium px-3.5 py-2 rounded-full transition-colors duration-200"
+            >
+              <ShoppingCart size={13} /> Add
+            </button>
+          )}
         </div>
       </div>
     </div>

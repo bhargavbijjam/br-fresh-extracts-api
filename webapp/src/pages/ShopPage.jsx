@@ -1,4 +1,4 @@
-import { Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
+import { Minus, Plus, Search, ShoppingCart, SlidersHorizontal, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AnimatedSection from '../components/ui/AnimatedSection';
@@ -6,17 +6,17 @@ import { useCart } from '../contexts/CartContext';
 import { useStore } from '../contexts/StoreContext';
 
 function ProductCard({ product }) {
-  const { addToCart } = useCart();
-  const [added, setAdded] = useState(false);
+  const { items, addToCart, updateQty, cartKey } = useCart();
 
   const variants = (product.variants && product.variants.length) ? product.variants : [{ size: product.weight, price: product.price }];
   const [selectedVariant, setSelectedVariant] = useState(variants[0]);
-  const [qty, setQty] = useState(1);
+
+  const key = cartKey({ ...product, weight: selectedVariant.size });
+  const cartItem = items.find(i => cartKey(i) === key);
+  const inCart = !!cartItem;
 
   const handleAdd = () => {
-    addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty: 1 });
   };
 
   return (
@@ -39,8 +39,8 @@ function ProductCard({ product }) {
         <h3 className="font-serif text-lg text-forest-700 mb-1 leading-tight">{product.name}</h3>
         <p className="text-xs text-warm-brown/60 mb-3 line-clamp-2">{product.description}</p>
 
-        {/* Variant & Qty selectors */}
-        <div className="flex gap-2 mb-2">
+        {/* Variant selector */}
+        <div className="flex gap-2 mb-3">
           <select
             value={selectedVariant.size}
             onChange={e => setSelectedVariant(variants.find(v => v.size === e.target.value))}
@@ -50,35 +50,39 @@ function ProductCard({ product }) {
               <option key={v.size} value={v.size}>{v.size}</option>
             ))}
           </select>
-          <select
-            value={qty}
-            onChange={e => setQty(Number(e.target.value))}
-            className="w-16 text-xs border border-sand-300 rounded-lg px-2 py-1.5 bg-white text-warm-brown focus:outline-none focus:border-terra-400"
-          >
-            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
         </div>
-
-        <p className="text-xs text-warm-brown/50 mb-3">
-          Total: <span className="text-terra-500 font-semibold">₹{(selectedVariant.price * qty).toLocaleString()}</span>
-        </p>
 
         <div className="flex items-center justify-between mt-auto">
           <div>
             <span className="font-serif text-xl text-terra-500 font-semibold">₹{selectedVariant.price}</span>
             <span className="text-warm-brown/50 text-xs ml-1">/ {selectedVariant.size}</span>
           </div>
-          <button
-            onClick={handleAdd}
-            className={`flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full transition-all duration-300 ${
-              added
-                ? 'bg-forest-600 text-cream'
-                : 'bg-terra-500 hover:bg-terra-600 text-cream'
-            }`}
-          >
-            <ShoppingCart size={13} />
-            {added ? 'Added!' : 'Add to Cart'}
-          </button>
+
+          {inCart ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => updateQty(key, cartItem.qty - 1)}
+                className="w-8 h-8 rounded-full bg-sand-100 hover:bg-sand-200 flex items-center justify-center text-warm-brown transition-colors"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="w-8 text-center text-sm font-semibold text-forest-700">{cartItem.qty}</span>
+              <button
+                onClick={() => updateQty(key, cartItem.qty + 1)}
+                className="w-8 h-8 rounded-full bg-terra-500 hover:bg-terra-600 flex items-center justify-center text-cream transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAdd}
+              className="flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-full bg-terra-500 hover:bg-terra-600 text-cream transition-all duration-300"
+            >
+              <ShoppingCart size={13} />
+              Add to Cart
+            </button>
+          )}
         </div>
       </div>
     </div>
