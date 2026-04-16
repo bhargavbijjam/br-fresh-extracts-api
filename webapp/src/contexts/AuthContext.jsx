@@ -37,9 +37,14 @@ const friendlyAuthError = (err, fallback = 'Something went wrong. Please try aga
     case 'auth/missing-verification-code':
       return 'Please enter the OTP code.';
     case 'auth/recaptcha-check-failed':
-      return 'Verification failed. Please try again.';
+    case 'auth/invalid-app-credential':
+      return 'Verification failed. Make sure your domain is added in Firebase Console → Authentication → Settings → Authorized Domains.';
     case 'auth/network-request-failed':
       return 'Network error. Check your internet and try again.';
+    case 'auth/operation-not-allowed':
+      return 'Phone sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+    case 'auth/captcha-check-failed':
+      return 'reCAPTCHA check failed. Please refresh and try again.';
     default:
       return fallback;
   }

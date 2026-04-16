@@ -212,7 +212,8 @@ export default function LoginPage() {
               </p>
             )}
 
-            <div id="recaptcha-container" className="hidden" />
+            {/* reCAPTCHA must be in DOM but invisible — do NOT use display:none */}
+            <div id="recaptcha-container" style={{ position: 'absolute', bottom: 0, left: '-9999px', height: 0, overflow: 'hidden' }} />
           </form>
 
           {mode === 'customer' && (

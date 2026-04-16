@@ -24,10 +24,21 @@ export const auth = getAuth(app);
 
 export const buildRecaptchaVerifier = (containerId, mode = 'invisible') => {
   if (typeof window === 'undefined') return null;
-  if (window.recaptchaVerifier) {
-    window.recaptchaVerifier.clear();
-  }
+  try {
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+  } catch { /* ignore stale verifier */ }
   const size = mode === 'visible' ? 'normal' : 'invisible';
-  window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size });
-  return window.recaptchaVerifier;
+  const verifier = new RecaptchaVerifier(auth, containerId, {
+    size,
+    callback: () => { /* reCAPTCHA solved */ },
+    'expired-callback': () => {
+      try { verifier.clear(); } catch { /* ignore */ }
+      window.recaptchaVerifier = null;
+    },
+  });
+  window.recaptchaVerifier = verifier;
+  return verifier;
 };
