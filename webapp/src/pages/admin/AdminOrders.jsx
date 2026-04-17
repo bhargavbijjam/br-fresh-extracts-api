@@ -208,7 +208,7 @@ export default function AdminOrders() {
             const proofSrc = getProofSrc(order);
             const isOpen = expanded === order.id;
             return (
-              <div key={order.id} className="bg-white rounded-2xl border border-sand-200 shadow-sm overflow-hidden">
+              <div key={order.id} className="bg-white rounded-2xl border border-sand-200 shadow-sm">
                 {/* Order header */}
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -300,7 +300,7 @@ export default function AdminOrders() {
 
                 {/* Expanded order details */}
                 {isOpen && (
-                  <div className="border-t border-sand-100 px-4 py-4 bg-sand-50/50">
+                  <div className="border-t border-sand-100 px-4 py-4 bg-sand-50/50 overflow-hidden rounded-b-2xl">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Items */}
                       <div>
