@@ -83,6 +83,7 @@ export default function AdminOrders() {
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
   const [proofModal, setProofModal] = useState(null);
+  const [statusOpen, setStatusOpen] = useState(null); // order.id whose status menu is open
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -262,19 +263,32 @@ export default function AdminOrders() {
                       </button>
                     )}
 
-                    {/* Status dropdown */}
-                    <div className="relative group">
-                      <button className="flex items-center gap-1 text-xs font-medium text-warm-brown border border-sand-200 bg-sand-50 px-2.5 py-1.5 rounded-lg hover:border-sand-300 transition-colors">
-                        Status <ChevronDown size={11} />
+                    {/* Status dropdown — click to open */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setStatusOpen(statusOpen === order.id ? null : order.id); }}
+                        className="flex items-center gap-1.5 text-xs font-medium text-warm-brown border border-sand-200 bg-sand-50 px-3 py-2 rounded-lg hover:border-terra-300 hover:bg-terra-50 transition-colors"
+                      >
+                        Status <ChevronDown size={12} className={`transition-transform ${statusOpen === order.id ? 'rotate-180' : ''}`} />
                       </button>
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-sand-200 rounded-xl shadow-lg z-10 overflow-hidden hidden group-hover:block min-w-[130px]">
-                        {STATUS_OPTIONS.map(s => (
-                          <button key={s} onClick={() => changeStatus(order.id, s)}
-                            className={`w-full text-left px-3 py-2 text-xs hover:bg-sand-50 transition-colors ${order.status === s ? 'font-semibold text-terra-500' : 'text-warm-brown'}`}>
-                            {s}
-                          </button>
-                        ))}
-                      </div>
+                      {statusOpen === order.id && (
+                        <>
+                          {/* Backdrop to close on outside click */}
+                          <div className="fixed inset-0 z-10" onClick={() => setStatusOpen(null)} />
+                          <div className="absolute right-0 top-full mt-1.5 bg-white border border-sand-200 rounded-xl shadow-xl z-20 overflow-hidden min-w-[140px]">
+                            {STATUS_OPTIONS.map(s => (
+                              <button key={s}
+                                onClick={() => { changeStatus(order.id, s); setStatusOpen(null); }}
+                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-sand-50 transition-colors flex items-center justify-between gap-2 ${
+                                  order.status === s ? 'font-semibold text-terra-500 bg-terra-50/50' : 'text-warm-brown'
+                                }`}>
+                                {s}
+                                {order.status === s && <span className="text-terra-400 text-xs">✓</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <button onClick={() => setExpanded(isOpen ? null : order.id)}
