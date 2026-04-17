@@ -75,13 +75,27 @@ export async function verifyOtpWidget(req, res, next) {
     });
 
     const msg91Data = await msg91Res.json();
+    console.log('[MSG91 verifyAccessToken response]', JSON.stringify(msg91Data));
+
     if (msg91Data.type !== 'success') {
       return res.status(401).json({ error: msg91Data.message || 'OTP verification failed.' });
     }
 
-    const mobile = msg91Data.data?.mobile || msg91Data.mobile;
+    // MSG91 may return mobile in different locations depending on widget version
+    const mobile =
+      msg91Data.data?.mobile ||
+      msg91Data.data?.Mobile ||
+      msg91Data.data?.phone ||
+      msg91Data.data?.identifier ||
+      msg91Data.mobile ||
+      msg91Data.identifier;
+
     if (!mobile) {
-      return res.status(401).json({ error: 'Could not retrieve mobile number from OTP response.' });
+      // Return the full data so we can debug exactly what came back
+      return res.status(401).json({
+        error: 'Could not retrieve mobile number from OTP response.',
+        debug: msg91Data.data || msg91Data,
+      });
     }
 
     const phone_number = mobile.startsWith('+') ? mobile : `+${mobile}`;
