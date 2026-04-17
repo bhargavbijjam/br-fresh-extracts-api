@@ -34,20 +34,7 @@ export default function LoginPage() {
       widgetId: MSG91_WIDGET_ID,
       tokenAuth: MSG91_TOKEN_AUTH,
       exposeMethods: true,
-      success: async (data) => {
-        const token = data?.['access-token'] || data?.token || data?.message;
-        if (!token) { setError('Verification failed. No token received.'); return; }
-        setLoading(true);
-        const result = await verifyMsg91Token(token, { name: form.name, email: form.email });
-        setLoading(false);
-        if (result.success) { navigate('/'); }
-        else { setError(result.error); }
-      },
-      failure: (err) => {
-        console.error('[MSG91]', err);
-        setError('OTP verification failed. Please try again.');
-        setLoading(false);
-      },
+      // success/failure handled in verifyOtp callback — do NOT add them here to avoid duplicate calls
     };
     if (window.initSendOTP) {
       window.initSendOTP(configuration);
