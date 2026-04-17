@@ -178,6 +178,7 @@ export default function CheckoutPage() {
         name: form.name, phone: form.phone, email: form.email,
         address: form.address, city: form.city, state: form.state, pincode: form.pincode,
         lat: location?.lat || null, lng: location?.lng || null,
+        maps_link: mapsLink || '',
       },
       items: items.map(i => ({ name: i.name, weight: i.weight, qty: i.qty, price: i.price })),
       subtotal: total,
@@ -202,6 +203,35 @@ export default function CheckoutPage() {
         localStorage.setItem(`so_orders_${phoneKey}`, JSON.stringify(list));
       }
     } catch { /* quota issue — order still continues */ }
+
+    // Save order to backend database
+    try {
+      const token = user?.tokens?.access;
+      if (token) {
+        const dbRes = await fetch(`${API_URL}orders/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            items: items.map(i => ({ product: i.name, quantity: i.qty, price_at_time: i.price, weight: i.weight || '' })),
+            total_amount: grandTotal,
+            shipping,
+            payment_mode: paymentMethod,
+            payment_proof_url: proofUrl || '',
+            customer: {
+              name: form.name, phone: form.phone, email: form.email,
+              address: form.address, city: form.city, state: form.state, pincode: form.pincode,
+              lat: location?.lat || null, lng: location?.lng || null,
+              maps_link: mapsLink || '',
+            },
+          }),
+        });
+        if (dbRes.ok) {
+          const saved = await dbRes.json();
+          // Update WhatsApp order ID to use the DB id for consistency
+          order.dbId = saved.id;
+        }
+      }
+    } catch { /* non-critical — order is already in localStorage */ }
 
     // Build WhatsApp notification message
     const translatedNames = await Promise.all(items.map(async (item) => translateAsync(item.name)));

@@ -1,4 +1,4 @@
-import { Leaf, LogOut, Menu, Settings, ShoppingCart, User, X } from 'lucide-react';
+import { ClipboardList, Leaf, LogOut, Menu, Settings, ShoppingCart, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -110,6 +110,12 @@ export default function Navbar() {
                     <Link to="/admin" onClick={() => setDropOpen(false)}
                       className="flex items-center gap-2 px-4 py-3 text-sm text-warm-brown hover:bg-ivory hover:text-terra-500 transition-colors">
                       <Settings size={15} /> {t('nav.admin')}
+                    </Link>
+                  )}
+                  {user.role === 'customer' && (
+                    <Link to="/orders" onClick={() => setDropOpen(false)}
+                      className="flex items-center gap-2 px-4 py-3 text-sm text-warm-brown hover:bg-ivory hover:text-terra-500 transition-colors">
+                      <ClipboardList size={15} /> My Orders
                     </Link>
                   )}
                   <button onClick={handleLogout}

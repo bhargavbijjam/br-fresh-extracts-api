@@ -1,9 +1,12 @@
 import {
     CheckCircle, ChevronDown, ExternalLink, Eye,
-    Package, Phone,
-    X
+    Loader2, Package, Phone,
+    RefreshCw, X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
+const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
 
 const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'];
 
@@ -27,22 +30,46 @@ const FILTER_TABS = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
-function loadOrders() {
-  try { return JSON.parse(localStorage.getItem('so_orders') || '[]'); }
-  catch { return []; }
-}
-
-function saveOrders(orders) {
-  localStorage.setItem('so_orders', JSON.stringify(orders));
+// Normalize an order from either localStorage shape or API shape to a common shape
+function normalizeForUI(o) {
+  return {
+    id:             o.id,
+    status:         o.status || 'Pending',
+    date:           o.created_at || o.date || new Date().toISOString(),
+    paymentMethod:  o.payment_mode || o.paymentMethod || 'COD',
+    paymentProofUrl: o.payment_proof_url || o.paymentProofUrl || '',
+    shipping:       Number(o.shipping ?? 0),
+    total:          Number(o.total_amount || o.total || 0),
+    notes:          o.notes || '',
+    customer: {
+      name:    o.customer?.name || '',
+      phone:   o.customer?.phone || '',
+      email:   o.customer?.email || '',
+      address: o.customer?.address || '',
+      city:    o.customer?.city || '',
+      state:   o.customer?.state || '',
+      pincode: o.customer?.pincode || '',
+      lat:     o.customer?.lat || null,
+      lng:     o.customer?.lng || null,
+      maps_link: o.customer?.maps_link || '',
+    },
+    items: (o.items || []).map(i => ({
+      name:     i.product || i.name || '',
+      weight:   i.weight || '',
+      qty:      i.quantity || i.qty || 1,
+      price:    Number(i.price_at_time || i.price || 0),
+    })),
+    _fromApi: !!o.payment_mode, // was this loaded from the API?
+  };
 }
 
 function getProofSrc(order) {
-  if (!order.paymentProofUrl) return null;
-  if (order.paymentProofUrl.startsWith('__local__')) {
-    const key = `so_proof_${order.id}`;
-    return localStorage.getItem(key) || null;
+  const url = order.paymentProofUrl;
+  if (!url) return null;
+  if (url.startsWith('__local__')) {
+    return localStorage.getItem(`so_proof_${url.replace('__local__', '')}`) || null;
   }
-  return order.paymentProofUrl;
+  return url;
 }
 
 function fmt(isoStr) {
@@ -52,18 +79,55 @@ function fmt(isoStr) {
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
-  const [proofModal, setProofModal] = useState(null); // order to show proof for
+  const [proofModal, setProofModal] = useState(null);
 
-  useEffect(() => { setOrders(loadOrders()); }, []);
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}admin/orders/`, {
+        headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.map(normalizeForUI));
+        setLoading(false);
+        return;
+      }
+    } catch { /* fall through to localStorage */ }
+    // Fallback: localStorage
+    try { setOrders((JSON.parse(localStorage.getItem('so_orders') || '[]')).map(normalizeForUI)); }
+    catch { setOrders([]); }
+    setLoading(false);
+  };
 
-  const updateOrder = (id, patch) => {
-    setOrders(prev => {
-      const next = prev.map(o => o.id === id ? { ...o, ...patch } : o);
-      saveOrders(next);
-      return next;
-    });
+  useEffect(() => { fetchOrders(); }, []);
+
+  const updateOrder = async (id, patch) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...patch } : o));
+    // Persist to backend if this was an API order
+    const order = orders.find(o => o.id === id);
+    if (order?._fromApi) {
+      try {
+        await fetch(`${API_URL}admin/orders/${id}/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {}),
+          },
+          body: JSON.stringify(patch),
+        });
+      } catch { /* non-critical */ }
+    } else {
+      // Update localStorage order
+      try {
+        const stored = JSON.parse(localStorage.getItem('so_orders') || '[]');
+        localStorage.setItem('so_orders', JSON.stringify(stored.map(o => o.id === id ? { ...o, ...patch } : o)));
+      } catch { /* quota */ }
+    }
   };
 
   const confirmCOD = (id) => updateOrder(id, { status: 'Confirmed' });
@@ -81,6 +145,9 @@ export default function AdminOrders() {
     if (filter === 'cancelled') return o.status === 'Cancelled';
     return true;
   });
+    if (filter === 'cancelled') return o.status === 'Cancelled';
+    return true;
+  });
 
   const countBadge = (key) => {
     if (key === 'all') return orders.length;
@@ -91,9 +158,15 @@ export default function AdminOrders() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl text-forest-700 mb-1">Orders</h1>
-        <p className="text-sm text-warm-brown/60">Manage customer orders — confirm COD calls & approve UPI payments.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-serif text-2xl text-forest-700 mb-1">Orders</h1>
+          <p className="text-sm text-warm-brown/60">Manage customer orders — confirm COD calls & approve UPI payments.</p>
+        </div>
+        <button onClick={fetchOrders} disabled={loading}
+          className="flex items-center gap-1.5 text-xs font-medium text-warm-brown border border-sand-200 bg-white px-3 py-2 rounded-lg hover:border-sand-300 transition-colors disabled:opacity-50">
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+        </button>
       </div>
 
       {/* Filter tabs */}
@@ -122,14 +195,18 @@ export default function AdminOrders() {
         })}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-16">
+          <Loader2 className="text-terra-400 mx-auto mb-3 animate-spin" size={32} strokeWidth={1.5} />
+          <p className="text-sm text-warm-brown/50">Loading orders…</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <Package className="text-sand-300 mx-auto mb-3" size={40} strokeWidth={1} />
           <p className="text-sm text-warm-brown/50">No orders found for this filter.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map(order => {
+        <div className="space-y-3">          {filtered.map(order => {
             const proofSrc = getProofSrc(order);
             const isOpen = expanded === order.id;
             return (
@@ -220,7 +297,7 @@ export default function AdminOrders() {
                         <div className="space-y-1.5">
                           {order.items?.map((item, i) => (
                             <div key={i} className="flex justify-between items-center text-sm">
-                              <span className="text-forest-700">{item.name} <span className="text-warm-brown/50">({item.weight})</span> × {item.qty}</span>
+                              <span className="text-forest-700">{item.name} {item.weight ? <span className="text-warm-brown/50">({item.weight})</span> : ''} × {item.qty}</span>
                               <span className="font-medium text-terra-500">₹{(item.price * item.qty).toLocaleString()}</span>
                             </div>
                           ))}
@@ -239,8 +316,8 @@ export default function AdminOrders() {
                         <p className="text-xs font-semibold text-warm-brown/60 uppercase tracking-wide mb-2">Delivery Address</p>
                         <p className="text-sm text-forest-700">{order.customer?.address}</p>
                         <p className="text-sm text-warm-brown/70">{order.customer?.city}, {order.customer?.state} — {order.customer?.pincode}</p>
-                        {order.customer?.lat && (
-                          <a href={`https://maps.google.com/?q=${order.customer.lat},${order.customer.lng}`}
+                        {(order.customer?.lat || order.customer?.maps_link) && (
+                          <a href={order.customer.maps_link || `https://maps.google.com/?q=${order.customer.lat},${order.customer.lng}`}
                             target="_blank" rel="noreferrer"
                             className="inline-flex items-center gap-1 text-xs text-terra-500 hover:underline mt-1">
                             <ExternalLink size={11} /> View on Google Maps
@@ -250,8 +327,7 @@ export default function AdminOrders() {
                           <p className="text-xs text-warm-brown/50 mt-1">{order.customer.email}</p>
                         )}
                         {/* UPI proof thumbnail */}
-                        {order.paymentMethod === 'UPI' && proofSrc && (
-                          <div className="mt-3">
+                        {order.paymentMethod === 'UPI' && proofSrc && (                          <div className="mt-3">
                             <p className="text-xs font-semibold text-warm-brown/60 uppercase tracking-wide mb-1">Payment Proof</p>
                             <img src={proofSrc} alt="Payment proof"
                               className="max-h-24 rounded-lg object-contain border border-sand-200 cursor-pointer hover:opacity-90 transition-opacity"

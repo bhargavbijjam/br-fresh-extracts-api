@@ -9,6 +9,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import OrdersPage from './pages/OrdersPage';
 import ShopPage from './pages/ShopPage';
 
 import AdminCategories from './pages/admin/AdminCategories';
@@ -36,6 +37,7 @@ export default function App() {
                   <Route path="shop" element={<ShopPage />} />
                   <Route path="cart" element={<CartPage />} />
                   <Route path="checkout" element={<CheckoutPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
                   <Route path="login" element={<LoginPage />} />
                 </Route>
 
