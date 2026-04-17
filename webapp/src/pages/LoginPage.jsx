@@ -34,6 +34,7 @@ export default function LoginPage() {
       widgetId: MSG91_WIDGET_ID,
       tokenAuth: MSG91_TOKEN_AUTH,
       exposeMethods: true,
+      widgetDiv: 'msg91-otp-widget',
       success: () => {}, // required by MSG91 — actual handling done in verifyOtp callback
       failure: (err) => { console.error('[MSG91 config failure]', err); },
     };
@@ -117,6 +118,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-ivory flex">
+      {/* Hidden container for MSG91 hCaptcha widget */}
+      <div id="msg91-otp-widget" style={{ display: 'none' }} />
       <div className="hidden lg:flex lg:w-1/2 bg-forest-700 relative overflow-hidden items-center justify-center p-12 grain-overlay">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80')] bg-cover bg-center opacity-20" />
         <div className="relative z-10 text-center">
