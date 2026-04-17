@@ -1,8 +1,11 @@
 import { ArrowRight, CheckSquare, Grid, Image, MessageSquare, Package, ShoppingCart, TrendingDown, TrendingUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStore } from '../../contexts/StoreContext';
+
+const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
+const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
 
 const cards = [
   { label: 'Orders',        to: '/admin/orders',      icon: ShoppingCart,  color: 'bg-amber-50 text-amber-600 border-amber-100' },
@@ -28,17 +31,39 @@ function getWindowStart(key) {
   const d = new Date(now); d.setDate(d.getDate()-30); d.setHours(0,0,0,0); return d;
 }
 
-function loadOrders()   { try { return JSON.parse(localStorage.getItem('so_orders')   || '[]'); } catch { return []; } }
 function loadExpenses() { try { return JSON.parse(localStorage.getItem('so_expenses') || '[]'); } catch { return []; } }
 
 export default function AdminDashboard() {
   const { store } = useStore();
   const { user } = useAuth();
   const [revTab, setRevTab] = useState('monthly');
+  const [allOrders, setAllOrders] = useState([]);
+
+  // Fetch orders from backend; fall back to localStorage
+  useEffect(() => {
+    fetch(`${API_URL}admin/orders/`, {
+      headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          // Normalize API shape to match localStorage shape for the calculations below
+          setAllOrders(data.map(o => ({
+            status: o.status,
+            date: o.created_at,
+            total: Number(o.total_amount || 0),
+            paymentMethod: o.payment_mode || 'COD',
+          })));
+        } else {
+          setAllOrders(JSON.parse(localStorage.getItem('so_orders') || '[]'));
+        }
+      })
+      .catch(() => setAllOrders(JSON.parse(localStorage.getItem('so_orders') || '[]')));
+  }, []);
 
   const { revenue, orderCount, expenseTotal, profit, pendingCount, codPending, upiPending } = useMemo(() => {
     const start = getWindowStart(revTab);
-    const orders   = loadOrders();
+    const orders   = allOrders;
     const expenses = loadExpenses();
 
     const windowOrders = orders.filter(o =>
@@ -55,7 +80,7 @@ export default function AdminDashboard() {
     const upiPending    = pendingOrders.filter(o => o.paymentMethod === 'UPI').length;
 
     return { revenue, orderCount, expenseTotal, profit, pendingCount: pendingOrders.length, codPending, upiPending };
-  }, [revTab]);
+  }, [revTab, allOrders]);
 
   const storeStats = [
     { label: 'Products',     value: store.products.length },
