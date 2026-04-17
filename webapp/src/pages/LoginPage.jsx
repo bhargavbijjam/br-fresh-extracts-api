@@ -92,7 +92,7 @@ export default function LoginPage() {
       async (data) => {
         const token = data?.['access-token'] || data?.token || data?.message;
         if (!token) { setLoading(false); setError('Verification failed. No token received.'); return; }
-        const result = await verifyMsg91Token(token, { name: form.name, email: form.email });
+        const result = await verifyMsg91Token(token, { phone: `91${phone.replace(/\D/g, '').slice(-10)}`, name: form.name, email: form.email });
         setLoading(false);
         if (result.success) { navigate('/'); }
         else { setError(result.error); }

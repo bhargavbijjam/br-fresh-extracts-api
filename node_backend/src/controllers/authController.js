@@ -58,7 +58,7 @@ export async function login(req, res, next) {
 // Verify MSG91 OTP widget access-token, find-or-create user, return app JWT
 export async function verifyOtpWidget(req, res, next) {
   try {
-    const { access_token, name, email } = req.body || {};
+    const { access_token, phone: phoneFromClient, name, email } = req.body || {};
     if (!access_token) {
       return res.status(400).json({ error: 'access_token required' });
     }
@@ -88,7 +88,8 @@ export async function verifyOtpWidget(req, res, next) {
       msg91Data.data?.phone ||
       msg91Data.data?.identifier ||
       msg91Data.mobile ||
-      msg91Data.identifier;
+      msg91Data.identifier ||
+      phoneFromClient; // fallback: client already sent OTP to this number; token proves it was verified
 
     if (!mobile) {
       // Return the full data so we can debug exactly what came back

@@ -40,6 +40,7 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           access_token: accessToken,
+          phone: profile.phone || '',
           name: profile.name?.trim() || '',
           email: profile.email?.trim() || '',
         }),
