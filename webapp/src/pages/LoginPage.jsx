@@ -34,7 +34,8 @@ export default function LoginPage() {
       widgetId: MSG91_WIDGET_ID,
       tokenAuth: MSG91_TOKEN_AUTH,
       exposeMethods: true,
-      // success/failure handled in verifyOtp callback — do NOT add them here to avoid duplicate calls
+      success: () => {}, // required by MSG91 — actual handling done in verifyOtp callback
+      failure: (err) => { console.error('[MSG91 config failure]', err); },
     };
     if (window.initSendOTP) {
       window.initSendOTP(configuration);
