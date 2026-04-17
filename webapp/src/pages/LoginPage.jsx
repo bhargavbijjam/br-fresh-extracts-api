@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const MSG91_WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID || '';
-const WIDGET_SCRIPT = 'https://control.msg91.com/app/assets/otp-provider/otp-provider.js';
 
 export default function LoginPage() {
   const [mode, setMode] = useState('customer');
@@ -14,7 +13,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const widgetRef = useRef(null);
   const scriptLoadedRef = useRef(false);
 
   const { loginAdmin, verifyMsg91Token, user } = useAuth();
@@ -25,64 +23,72 @@ export default function LoginPage() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  // Load MSG91 widget when in customer mode
-  useEffect(() => {
-    if (mode !== 'customer') return;
+  const launchWidget = () => {
     if (!MSG91_WIDGET_ID) return;
 
-    const initWidget = () => {
-      if (!window.CheckWidgetService) return;
-      try { widgetRef.current?.destroy?.(); } catch { /* ignore */ }
-      const config = {
-        widgetId: MSG91_WIDGET_ID,
-        target: '#msg91-otp-widget',
-        success: async (data) => {
-          const token = data?.['access-token'] || data?.message || data?.token;
-          if (!token) {
-            setError('OTP verification failed. No token received.');
-            return;
-          }
-          setLoading(true);
-          const result = await verifyMsg91Token(token, { name: form.name, email: form.email });
-          setLoading(false);
-          if (result.success) {
-            navigate('/');
-          } else {
-            setError(result.error);
-          }
-        },
-        failure: () => {
-          setError('OTP verification failed. Please try again.');
-        },
-      };
-      widgetRef.current = new window.CheckWidgetService(config);
-      widgetRef.current.renderWidget();
+    const configuration = {
+      widgetId: MSG91_WIDGET_ID,
+      success: async (data) => {
+        const token = data?.['access-token'] || data?.token || data?.message;
+        if (!token) {
+          setError('OTP verification failed. No token received.');
+          return;
+        }
+        setLoading(true);
+        const result = await verifyMsg91Token(token, { name: form.name, email: form.email });
+        setLoading(false);
+        if (result.success) {
+          navigate('/');
+        } else {
+          setError(result.error);
+        }
+      },
+      failure: (err) => {
+        console.error('[MSG91 widget failure]', err);
+        setError('OTP verification failed. Please try again.');
+      },
     };
 
-    if (window.CheckWidgetService) {
-      initWidget();
+    if (window.initSendOTP) {
+      window.initSendOTP(configuration);
       return;
     }
 
+    // Load scripts with fallback
     if (scriptLoadedRef.current) return;
     scriptLoadedRef.current = true;
 
-    const existingScript = document.getElementById('msg91-widget-script');
-    if (existingScript) {
-      existingScript.addEventListener('load', initWidget);
-      return;
+    const urls = [
+      'https://verify.msg91.com/otp-provider.js',
+      'https://verify.phone91.com/otp-provider.js',
+    ];
+    let i = 0;
+    function attempt() {
+      const s = document.createElement('script');
+      s.src = urls[i];
+      s.async = true;
+      s.onload = () => {
+        if (typeof window.initSendOTP === 'function') {
+          window.initSendOTP(configuration);
+        }
+      };
+      s.onerror = () => {
+        i++;
+        if (i < urls.length) attempt();
+        else setError('Failed to load OTP widget. Please refresh and try again.');
+      };
+      document.head.appendChild(s);
     }
+    attempt();
+  };
 
-    const script = document.createElement('script');
-    script.id = 'msg91-widget-script';
-    script.src = WIDGET_SCRIPT;
-    script.async = true;
-    script.onload = initWidget;
-    document.body.appendChild(script);
-
-    return () => {
-      try { widgetRef.current?.destroy?.(); } catch { /* ignore */ }
-    };
+  // Auto-launch widget when switching to customer tab
+  useEffect(() => {
+    if (mode === 'customer' && MSG91_WIDGET_ID) {
+      // Small delay to let DOM settle
+      const timer = setTimeout(launchWidget, 300);
+      return () => clearTimeout(timer);
+    }
   }, [mode]);
 
   const handleAdminSubmit = async (e) => {
@@ -188,8 +194,18 @@ export default function LoginPage() {
                 </p>
               )}
 
-              {/* MSG91 widget renders here */}
-              <div id="msg91-otp-widget" className="min-h-[120px]" />
+              {MSG91_WIDGET_ID && (
+                <button
+                  type="button"
+                  onClick={launchWidget}
+                  disabled={loading}
+                  className="btn-primary w-full text-center flex items-center justify-center gap-2"
+                >
+                  {loading
+                    ? <span className="inline-block w-4 h-4 border-2 border-cream/30 border-t-cream rounded-full animate-spin" />
+                    : t('login.sendOtp')}
+                </button>
+              )}
 
               {error && <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">{tr(error)}</p>}
               {loading && (
