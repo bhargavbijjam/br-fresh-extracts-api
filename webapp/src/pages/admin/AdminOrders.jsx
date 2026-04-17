@@ -145,9 +145,6 @@ export default function AdminOrders() {
     if (filter === 'cancelled') return o.status === 'Cancelled';
     return true;
   });
-    if (filter === 'cancelled') return o.status === 'Cancelled';
-    return true;
-  });
 
   const countBadge = (key) => {
     if (key === 'all') return orders.length;
