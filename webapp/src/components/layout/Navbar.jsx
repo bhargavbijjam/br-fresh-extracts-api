@@ -1,4 +1,4 @@
-import { ClipboardList, Leaf, LogOut, Menu, Settings, ShoppingCart, User, X } from 'lucide-react';
+import { ClipboardList, LogOut, Menu, Settings, ShoppingCart, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,7 +42,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <Leaf className="text-terra-500" size={22} strokeWidth={1.5} />
+          <img src="https://res.cloudinary.com/djmrm8sgh/image/upload/v1776526884/Untitled_design-removebg-preview_obbk20.png" alt="BR Fresh Extracts" className="h-8 w-8 object-contain" />
           <span className={`font-serif text-xl md:text-2xl font-semibold tracking-wide transition-colors ${light ? 'text-cream' : 'text-forest-700'}`}>
             BR Fresh Extracts
           </span>

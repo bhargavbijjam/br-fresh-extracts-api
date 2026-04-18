@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Leaf, Mail, MessageCircle, Twitter } from 'lucide-react';
+import { Facebook, Instagram, Mail, MessageCircle, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useStore } from '../../contexts/StoreContext';
@@ -12,7 +12,7 @@ export default function Footer() {
       {/* Leaf divider */}
       <div className="flex items-center justify-center py-6 border-b border-forest-700">
         <div className="h-px bg-forest-600 flex-1 max-w-xs" />
-        <Leaf className="mx-4 text-terra-400" size={20} />
+        <img src="https://res.cloudinary.com/djmrm8sgh/image/upload/v1776526884/Untitled_design-removebg-preview_obbk20.png" alt="" className="mx-4 h-6 w-6 object-contain opacity-80" />
         <div className="h-px bg-forest-600 flex-1 max-w-xs" />
       </div>
 
@@ -20,7 +20,7 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <Leaf className="text-terra-400" size={20} />
+            <img src="https://res.cloudinary.com/djmrm8sgh/image/upload/v1776526884/Untitled_design-removebg-preview_obbk20.png" alt="BR Fresh Extracts" className="h-7 w-7 object-contain" />
             <span className="font-serif text-2xl text-cream font-semibold">BR Fresh Extracts</span>
           </div>
           <p className="text-cream/60 text-sm leading-relaxed max-w-xs">

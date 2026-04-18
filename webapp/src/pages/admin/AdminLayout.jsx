@@ -4,7 +4,6 @@ import {
     Grid,
     Image,
     LayoutDashboard,
-    Leaf,
     LogOut, Menu,
     MessageSquare,
     Package,
@@ -42,7 +41,7 @@ export default function AdminLayout() {
     <aside className={`bg-white border-r border-sand-200 flex flex-col h-full`}>
       {/* Logo area */}
       <div className="px-6 py-5 border-b border-sand-100 flex items-center gap-2">
-        <Leaf className="text-terra-500" size={18} />
+        <img src="https://res.cloudinary.com/djmrm8sgh/image/upload/v1776526884/Untitled_design-removebg-preview_obbk20.png" alt="BR Fresh Extracts" className="h-7 w-7 object-contain" />
         <div>
           <p className="font-serif text-base text-forest-700 font-semibold">BR Fresh Extracts</p>
           <p className="text-xs text-warm-brown/50">Admin Panel</p>
