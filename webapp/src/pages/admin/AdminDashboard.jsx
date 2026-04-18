@@ -47,12 +47,17 @@ export default function AdminDashboard() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data) {
-          // Normalize API shape to match localStorage shape for the calculations below
           setAllOrders(data.map(o => ({
             status: o.status,
             date: o.created_at,
             total: Number(o.total_amount || 0),
             paymentMethod: o.payment_mode || 'COD',
+            items: (o.items || []).map(i => ({
+              name: i.product || i.name || '',
+              category: i.category || '',
+              qty: i.quantity || i.qty || 1,
+              price: Number(i.price_at_time || i.price || 0),
+            })),
           })));
         } else {
           setAllOrders(JSON.parse(localStorage.getItem('so_orders') || '[]'));
@@ -61,7 +66,7 @@ export default function AdminDashboard() {
       .catch(() => setAllOrders(JSON.parse(localStorage.getItem('so_orders') || '[]')));
   }, []);
 
-  const { revenue, orderCount, expenseTotal, profit, pendingCount, codPending, upiPending } = useMemo(() => {
+  const { revenue, orderCount, expenseTotal, profit, pendingCount, codPending, upiPending, topProducts, topCategories } = useMemo(() => {
     const start = getWindowStart(revTab);
     const orders   = allOrders;
     const expenses = loadExpenses();
@@ -79,7 +84,25 @@ export default function AdminDashboard() {
     const codPending    = pendingOrders.filter(o => o.paymentMethod === 'COD').length;
     const upiPending    = pendingOrders.filter(o => o.paymentMethod === 'UPI').length;
 
-    return { revenue, orderCount, expenseTotal, profit, pendingCount: pendingOrders.length, codPending, upiPending };
+    // Product and category breakdown
+    const productMap = {};
+    const categoryMap = {};
+    windowOrders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const name = item.name || 'Unknown';
+        const cat  = item.category || 'Uncategorized';
+        const rev  = (item.price || 0) * (item.qty || 1);
+        if (!productMap[name])  productMap[name]  = { name,  revenue: 0, qty: 0 };
+        if (!categoryMap[cat])  categoryMap[cat]  = { name: cat, revenue: 0 };
+        productMap[name].revenue  += rev;
+        productMap[name].qty      += item.qty || 1;
+        categoryMap[cat].revenue  += rev;
+      });
+    });
+    const topProducts   = Object.values(productMap).sort((a,b) => b.revenue - a.revenue).slice(0, 5);
+    const topCategories = Object.values(categoryMap).sort((a,b) => b.revenue - a.revenue).slice(0, 5);
+
+    return { revenue, orderCount, expenseTotal, profit, pendingCount: pendingOrders.length, codPending, upiPending, topProducts, topCategories };
   }, [revTab, allOrders]);
 
   const storeStats = [
@@ -164,6 +187,56 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Revenue breakdown by product + category */}
+      {(topProducts.length > 0 || topCategories.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Top products */}
+          {topProducts.length > 0 && (
+            <div className="bg-white border border-sand-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-warm-brown/60 uppercase tracking-wide mb-3">Top Products</p>
+              <div className="space-y-2">
+                {topProducts.map((p, i) => {
+                  const pct = Math.round((p.revenue / revenue) * 100);
+                  return (
+                    <div key={p.name}>
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-forest-700 font-medium truncate max-w-[160px]">{p.name}</span>
+                        <span className="text-terra-500 font-semibold ml-2">₹{p.revenue.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="h-1.5 bg-sand-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-terra-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {/* Top categories */}
+          {topCategories.length > 0 && (
+            <div className="bg-white border border-sand-200 rounded-2xl p-4 shadow-sm">
+              <p className="text-xs font-semibold text-warm-brown/60 uppercase tracking-wide mb-3">Revenue by Category</p>
+              <div className="space-y-2">
+                {topCategories.map((c, i) => {
+                  const pct = Math.round((c.revenue / revenue) * 100);
+                  return (
+                    <div key={c.name}>
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-forest-700 font-medium">{c.name}</span>
+                        <span className="text-forest-600 font-semibold ml-2">₹{c.revenue.toLocaleString('en-IN')} <span className="text-warm-brown/40">({pct}%)</span></span>
+                      </div>
+                      <div className="h-1.5 bg-sand-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-forest-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Store content stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

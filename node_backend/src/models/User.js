@@ -10,6 +10,7 @@ const UserSchema = new mongoose.Schema({
   is_profile_complete: { type: Boolean, default: false },
   is_active: { type: Boolean, default: true },
   is_staff: { type: Boolean, default: false },
+  cart: { type: mongoose.Schema.Types.Mixed, default: [] },
 }, { timestamps: true });
 
 UserSchema.set('toJSON', {

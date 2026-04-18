@@ -12,6 +12,7 @@ const ProductSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   image: { type: String, default: '' },
   in_stock: { type: Boolean, default: true },
+  stock: { type: Number, default: null },   // null = unlimited, 0 = sold out, N = quantity
   featured: { type: Boolean, default: false },
   weight: { type: String, default: '' },
   variants: { type: [VariantSchema], default: [] },

@@ -1,10 +1,139 @@
-import { ArrowLeft, Leaf, Minus, Plus, ShoppingCart, Star, Truck } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ArrowLeft, Leaf, Loader2, Minus, Plus, ShoppingCart, Star, Truck } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AnimatedSection from '../components/ui/AnimatedSection';
+import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useStore } from '../contexts/StoreContext';
+
+const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
+
+function StarRating({ value, onChange, size = 20 }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} type="button"
+          onMouseEnter={() => onChange && setHovered(n)}
+          onMouseLeave={() => onChange && setHovered(0)}
+          onClick={() => onChange && onChange(n)}
+          className={`transition-colors ${onChange ? 'cursor-pointer' : 'cursor-default'}`}>
+          <Star size={size} className={n <= (hovered || value) ? 'text-amber-400 fill-amber-400' : 'text-sand-300'} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewsSection({ productId, user, getValidToken }) {
+  const [data, setData] = useState({ reviews: [], avg_rating: 0, count: 0 });
+  const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`${API_URL}products/${productId}/reviews/`);
+      if (res.ok) setData(await res.json());
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { if (productId) fetchReviews(); }, [productId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (rating === 0) return setError('Please select a star rating.');
+    setError(''); setSubmitting(true);
+    try {
+      const token = getValidToken ? await getValidToken() : null;
+      if (!token) return setError('Sign in to leave a review.');
+      const res = await fetch(`${API_URL}products/${productId}/reviews/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rating, comment }),
+      });
+      if (res.ok) { setSuccess(true); setRating(0); setComment(''); fetchReviews(); }
+      else { const d = await res.json(); setError(d.error || 'Could not submit review.'); }
+    } catch { setError('Network error. Please try again.'); }
+    finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 pb-12">
+      <AnimatedSection>
+        <h2 className="font-serif text-2xl text-forest-700 mb-2">Customer Reviews</h2>
+        {!loading && data.count > 0 && (
+          <div className="flex items-center gap-3 mb-6">
+            <StarRating value={Math.round(data.avg_rating)} size={18} />
+            <span className="font-semibold text-forest-700 text-sm">{data.avg_rating} / 5</span>
+            <span className="text-warm-brown/50 text-sm">({data.count} review{data.count !== 1 ? 's' : ''})</span>
+          </div>
+        )}
+
+        {/* Write a review */}
+        {user && !success && (
+          <form onSubmit={handleSubmit} className="bg-white border border-sand-200 rounded-2xl p-5 mb-6 shadow-sm">
+            <p className="font-medium text-forest-700 text-sm mb-3">Write a Review</p>
+            <div className="flex items-center gap-3 mb-3">
+              <StarRating value={rating} onChange={setRating} size={22} />
+              {rating > 0 && <span className="text-xs text-warm-brown/60">{['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][rating]}</span>}
+            </div>
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Share your experience with this product…"
+              className="w-full text-sm border border-sand-300 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:border-terra-400 mb-3"
+            />
+            {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+            <button type="submit" disabled={submitting}
+              className="flex items-center gap-2 bg-terra-500 hover:bg-terra-600 text-cream text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50">
+              {submitting ? <Loader2 size={14} className="animate-spin" /> : <Star size={14} />}
+              Submit Review
+            </button>
+          </form>
+        )}
+        {!user && (
+          <p className="text-sm text-warm-brown/60 mb-6">
+            <Link to="/login" className="text-terra-500 hover:underline font-medium">Sign in</Link> to leave a review.
+          </p>
+        )}
+        {success && (
+          <div className="bg-forest-50 border border-forest-200 text-forest-700 text-sm px-4 py-3 rounded-xl mb-6">
+            ✓ Review submitted — thank you!
+          </div>
+        )}
+
+        {/* Reviews list */}
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="text-terra-400 animate-spin" size={24} /></div>
+        ) : data.reviews.length === 0 ? (
+          <p className="text-sm text-warm-brown/50 py-4">No reviews yet. Be the first!</p>
+        ) : (
+          <div className="space-y-4">
+            {data.reviews.map(r => (
+              <div key={r.id} className="bg-white border border-sand-200 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-forest-700 text-sm">{r.user_name}</span>
+                    <StarRating value={r.rating} size={13} />
+                  </div>
+                  <span className="text-xs text-warm-brown/40">{new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </div>
+                {r.comment && <p className="text-sm text-warm-brown/80 leading-relaxed">{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </AnimatedSection>
+    </div>
+  );
+}
 
 function SuggestionCard({ product }) {
   const { items, addToCart, updateQty, cartKey } = useCart();
@@ -73,6 +202,7 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const { store } = useStore();
   const { t, tr } = useLanguage();
+  const { user, getValidToken } = useAuth();
   const { items, addToCart, updateQty, cartKey } = useCart();
   const navigate = useNavigate();
 
@@ -236,6 +366,9 @@ export default function ProductDetailPage() {
           </AnimatedSection>
         </div>
       </div>
+
+      {/* Reviews */}
+      <ReviewsSection productId={id} user={user} getValidToken={getValidToken} />
 
       {/* Suggestions */}
       {suggestions.length > 0 && (

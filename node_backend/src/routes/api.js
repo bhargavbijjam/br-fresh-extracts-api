@@ -4,9 +4,11 @@ import {
     adminLogin,
     changePassword,
     checkUser,
+    getCart,
     login,
     profile,
     refreshToken,
+    saveCart,
     verifyOtpWidget,
 } from '../controllers/authController.js';
 import {
@@ -30,6 +32,7 @@ import {
     listPublicProducts,
     updateProduct,
 } from '../controllers/productsController.js';
+import { createReview, deleteReview, listReviews } from '../controllers/reviewsController.js';
 import { getStoreSettings, updateStoreSettings } from '../controllers/storeSettingsController.js';
 import { translateText } from '../controllers/translateController.js';
 import { uploadImage } from '../controllers/uploadController.js';
@@ -43,6 +46,11 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.get('/products/', listPublicProducts);
 router.get('/categories/', listCategories);
 router.get('/store-settings/', getStoreSettings);
+
+// Product reviews (public read, JWT write)
+router.get('/products/:id/reviews/', listReviews);
+router.post('/products/:id/reviews/', requireJwt, createReview);
+router.delete('/products/:id/reviews/:reviewId/', requireSecret, deleteReview);
 
 // Orders (JWT)
 router.get('/orders/', requireJwt, listUserOrders);
@@ -80,6 +88,8 @@ router.get('/auth/profile/', requireJwt, profile);
 router.put('/auth/profile/', requireJwt, profile);
 router.post('/auth/change-password/', requireJwt, changePassword);
 router.post('/auth/token/refresh/', refreshToken);
+router.get('/auth/cart/', requireJwt, getCart);
+router.put('/auth/cart/', requireJwt, saveCart);
 
 // Translation
 router.post('/translate/', translateText);

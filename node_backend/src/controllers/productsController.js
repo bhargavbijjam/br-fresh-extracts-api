@@ -10,6 +10,7 @@ function normalizeProduct(p) {
     price: Number(p.price),
     image: p.image || '',
     in_stock: !!p.in_stock,
+    stock: p.stock ?? null,
     featured: !!p.featured,
     weight: p.weight || '',
     variants: Array.isArray(p.variants) && p.variants.length
@@ -52,6 +53,7 @@ export async function createProduct(req, res, next) {
       price: Number(firstVariant.price || 0),
       image: payload.image || '',
       in_stock: payload.in_stock !== undefined ? !!payload.in_stock : true,
+      stock: payload.stock !== undefined ? (payload.stock === null ? null : Number(payload.stock)) : null,
       featured: !!payload.featured,
       weight: firstVariant.size || payload.weight || '',
       variants: variants.length ? variants.map(v => ({ size: v.size, price: Number(v.price) })) : [],
@@ -84,6 +86,7 @@ export async function updateProduct(req, res, next) {
       category: payload.category,
       image: payload.image,
       in_stock: payload.in_stock,
+      stock: payload.stock !== undefined ? (payload.stock === null ? null : Number(payload.stock)) : undefined,
       featured: payload.featured,
       weight: payload.weight,
     };

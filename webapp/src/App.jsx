@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { CartProvider } from './contexts/CartContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CartProvider, useCart } from './contexts/CartContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { StoreProvider } from './contexts/StoreContext';
 
@@ -24,6 +25,18 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminWhyUs from './pages/admin/AdminWhyUs';
 
+// Bridge: syncs cart when user logs in
+function CartSyncBridge() {
+  const { user, getValidToken } = useAuth();
+  const { syncCartFromServer } = useCart();
+  useEffect(() => {
+    if (user?.role === 'customer' && user?.tokens?.access) {
+      getValidToken().then(token => { if (token) syncCartFromServer(token); });
+    }
+  }, [user?.tokens?.access]);
+  return null;
+}
+
 export default function App() {
   return (
     <Router>
@@ -31,6 +44,7 @@ export default function App() {
         <AuthProvider>
           <StoreProvider>
             <CartProvider>
+              <CartSyncBridge />
               <Routes>
                 {/* Public routes with Navbar + Footer */}
                 <Route element={<MainLayout />}>

@@ -13,7 +13,7 @@ function apiHeaders(json = true) {
   return h;
 }
 
-const empty = { name: '', category: '', price: '', weight: '', image: '', description: '', featured: false, variants: [{ size: '', price: '' }] };
+const empty = { name: '', category: '', price: '', weight: '', image: '', description: '', featured: false, stock: '', variants: [{ size: '', price: '' }] };
 
 export default function AdminProducts() {
   const [products, setProducts]   = useState([]);
@@ -46,7 +46,7 @@ export default function AdminProducts() {
   const openAdd  = () => { setForm(empty); setEditing(null); setShowForm(true); };
   const openEdit = (p) => {
     const variants = (p.variants && p.variants.length) ? p.variants.map(v => ({ size: v.size, price: String(v.price) })) : [{ size: p.weight, price: String(p.price) }];
-    setForm({ name: p.name, category: p.category, price: String(p.price), weight: p.weight || '', image: p.image || '', description: p.description, featured: p.featured, variants });
+    setForm({ name: p.name, category: p.category, price: String(p.price), weight: p.weight || '', image: p.image || '', description: p.description, featured: p.featured, stock: p.stock !== null && p.stock !== undefined ? String(p.stock) : '', variants });
     setEditing(p.id); setShowForm(true);
   };
   const cancel = () => { setShowForm(false); setEditing(null); };
@@ -57,7 +57,8 @@ export default function AdminProducts() {
     try {
       const variants = form.variants.filter(v => v.size && v.price).map(v => ({ size: v.size, price: Number(v.price) }));
       const firstVariant = variants[0] || { size: form.weight, price: Number(form.price) };
-      const payload = { ...form, price: firstVariant.price, weight: firstVariant.size, variants };
+      const stockVal = form.stock === '' ? null : Number(form.stock);
+      const payload = { ...form, price: firstVariant.price, weight: firstVariant.size, variants, stock: stockVal };
       const url    = editing ? `${API_URL}admin/products/${editing}/` : `${API_URL}admin/products/`;
       const method = editing ? 'PUT' : 'POST';
       const res = await fetch(url, { method, headers: apiHeaders(), body: JSON.stringify(payload) });
@@ -143,6 +144,11 @@ export default function AdminProducts() {
                 <Star size={13} className="text-terra-400" /> Mark as Bestseller / Featured
               </label>
             </div>
+            <div>
+              <label className="label">Stock Quantity <span className="text-warm-brown/40 font-normal">(leave blank = unlimited, 0 = sold out)</span></label>
+              <input type="number" min="0" placeholder="e.g. 50 or leave blank" className="input-field"
+                value={form.stock} onChange={e => set('stock', e.target.value)} />
+            </div>
             <div className="md:col-span-2 flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 text-sm py-2.5">
                 <Save size={14} /> {editing ? 'Update' : 'Add Product'}
@@ -171,6 +177,7 @@ export default function AdminProducts() {
               <th className="text-left px-5 py-3 text-xs font-medium text-warm-brown/60 uppercase tracking-wider">Product</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-warm-brown/60 uppercase tracking-wider hidden md:table-cell">Category</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-warm-brown/60 uppercase tracking-wider">Price</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-warm-brown/60 uppercase tracking-wider hidden md:table-cell">Stock</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-warm-brown/60 uppercase tracking-wider hidden md:table-cell">Featured</th>
               <th className="px-4 py-3" />
             </tr>
@@ -190,6 +197,15 @@ export default function AdminProducts() {
                 </td>
                 <td className="px-4 py-3.5 text-warm-brown/70 hidden md:table-cell">{p.category}</td>
                 <td className="px-4 py-3.5 font-serif text-terra-500 font-semibold">₹{p.price}</td>
+                <td className="px-4 py-3.5 hidden md:table-cell">
+                  {p.stock === 0 ? (
+                    <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-medium">Sold Out</span>
+                  ) : p.stock !== null && p.stock !== undefined ? (
+                    <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full">{p.stock} left</span>
+                  ) : (
+                    <span className="text-xs text-warm-brown/30">∞</span>
+                  )}
+                </td>
                 <td className="px-4 py-3.5 hidden md:table-cell">
                   {p.featured && <span className="text-xs bg-terra-50 text-terra-600 border border-terra-100 px-2 py-0.5 rounded-full">⭐ Featured</span>}
                 </td>

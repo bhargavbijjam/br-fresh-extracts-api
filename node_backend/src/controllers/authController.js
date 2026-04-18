@@ -197,3 +197,35 @@ export async function refreshToken(req, res, next) {
     next(err);
   }
 }
+
+// GET /auth/cart/ — returns user's saved cart
+export async function getCart(req, res, next) {
+  try {
+    const userId = req.jwtUser?.user_id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const user = await User.findById(userId).select('cart');
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    res.json({ cart: user.cart || [] });
+  } catch (err) { next(err); }
+}
+
+// PUT /auth/cart/ — saves user's cart
+export async function saveCart(req, res, next) {
+  try {
+    const userId = req.jwtUser?.user_id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const { cart } = req.body || {};
+    if (!Array.isArray(cart)) return res.status(400).json({ error: 'cart must be an array.' });
+    // Sanitize: keep only safe fields
+    const sanitized = cart.map(item => ({
+      id:     String(item.id || ''),
+      name:   String(item.name || '').slice(0, 200),
+      weight: String(item.weight || '').slice(0, 50),
+      price:  Number(item.price) || 0,
+      qty:    Math.max(1, Math.min(99, Number(item.qty) || 1)),
+      image:  String(item.image || '').slice(0, 500),
+    })).slice(0, 50); // max 50 items
+    await User.findByIdAndUpdate(userId, { cart: sanitized });
+    res.json({ cart: sanitized });
+  } catch (err) { next(err); }
+}

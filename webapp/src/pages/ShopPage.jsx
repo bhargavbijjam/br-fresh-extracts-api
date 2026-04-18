@@ -35,6 +35,11 @@ function ProductCard({ product }) {
             {t('shop.bestseller')}
           </span>
         )}
+        {product.stock === 0 && (
+          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2.5 py-1 rounded-full font-medium">
+            {t('shop.soldOut')}
+          </span>
+        )}
       </Link>
       <div className="p-5 flex flex-col flex-1">
         <p className="text-xs text-terra-500 font-medium mb-1 tracking-wide">{tr(product.category)}</p>
@@ -78,6 +83,10 @@ function ProductCard({ product }) {
                 <Plus size={14} />
               </button>
             </div>
+          ) : product.stock === 0 ? (
+            <span className="text-xs font-medium text-red-500 bg-red-50 border border-red-100 px-3 py-1.5 rounded-full">
+              {t('shop.soldOut')}
+            </span>
           ) : (
             <button
               onClick={handleAdd}
@@ -98,6 +107,7 @@ export default function ShopPage() {
   const { t, tr } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const activeCategory = searchParams.get('cat') || 'All';
@@ -111,12 +121,20 @@ export default function ShopPage() {
   const categories = ['All', ...store.categories.map(c => c.name)];
 
   const filtered = useMemo(() => {
-    return store.products.filter(p => {
+    const base = store.products.filter(p => {
       const matchCat = activeCategory === 'All' || p.category === activeCategory;
       const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [store.products, activeCategory, search]);
+    if (!sortBy) return base;
+    return [...base].sort((a, b) => {
+      if (sortBy === 'price_asc')  return a.price - b.price;
+      if (sortBy === 'price_desc') return b.price - a.price;
+      if (sortBy === 'name_az')    return a.name.localeCompare(b.name);
+      if (sortBy === 'newest')     return 0; // already sorted newest-first from API
+      return 0;
+    });
+  }, [store.products, activeCategory, search, sortBy]);
 
   return (
     <div className="pt-20 min-h-screen bg-cream">
@@ -149,6 +167,18 @@ export default function ShopPage() {
             className="md:hidden flex items-center gap-2 text-sm text-warm-brown border border-sand-300 px-4 py-2.5 rounded-lg">
             <SlidersHorizontal size={15} /> {t('shop.filters')}
           </button>
+          {/* Sort dropdown */}
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            className="text-sm border border-sand-300 rounded-lg px-3 py-2.5 bg-white text-warm-brown focus:outline-none focus:border-terra-400 min-w-[180px]"
+          >
+            <option value="">{t('shop.sortDefault')}</option>
+            <option value="price_asc">{t('shop.sortPriceLow')}</option>
+            <option value="price_desc">{t('shop.sortPriceHigh')}</option>
+            <option value="name_az">{t('shop.sortName')}</option>
+            <option value="newest">{t('shop.sortNew')}</option>
+          </select>
         </div>
 
         {/* Category tabs */}

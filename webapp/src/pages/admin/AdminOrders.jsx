@@ -1,9 +1,10 @@
 import {
-    CheckCircle, ChevronDown, ExternalLink, Eye,
+    CheckCircle, ChevronDown,
+    ExternalLink, Eye,
     Loader2, Package, Phone,
     RefreshCw, X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
 const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
@@ -83,7 +84,9 @@ export default function AdminOrders() {
   const [filter, setFilter] = useState('all');
   const [expanded, setExpanded] = useState(null);
   const [proofModal, setProofModal] = useState(null);
-  const [statusOpen, setStatusOpen] = useState(null); // order.id whose status menu is open
+  const [statusOpen, setStatusOpen] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkStatus, setBulkStatus] = useState('');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -135,17 +138,65 @@ export default function AdminOrders() {
   const approveUPI = (id) => updateOrder(id, { status: 'Packed' });
   const changeStatus = (id, status) => updateOrder(id, { status });
 
-  const filtered = orders.filter(o => {
-    if (filter === 'all') return true;
-    if (filter === 'cod') return o.paymentMethod === 'COD' && o.status === 'Pending';
-    if (filter === 'upi') return o.paymentMethod === 'UPI' && o.status === 'Pending';
-    if (filter === 'confirmed') return o.status === 'Confirmed';
-    if (filter === 'packed') return o.status === 'Packed';
-    if (filter === 'shipped') return o.status === 'Shipped';
-    if (filter === 'delivered') return o.status === 'Delivered';
-    if (filter === 'cancelled') return o.status === 'Cancelled';
-    return true;
+  const filtered = useMemo(() => {
+    return orders.filter(o => {
+      if (filter === 'all') return true;
+      if (filter === 'cod') return o.paymentMethod === 'COD' && o.status === 'Pending';
+      if (filter === 'upi') return o.paymentMethod === 'UPI' && o.status === 'Pending';
+      if (filter === 'confirmed') return o.status === 'Confirmed';
+      if (filter === 'packed') return o.status === 'Packed';
+      if (filter === 'shipped') return o.status === 'Shipped';
+      if (filter === 'delivered') return o.status === 'Delivered';
+      if (filter === 'cancelled') return o.status === 'Cancelled';
+      return true;
+    });
+  }, [orders, filter]);
+
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
   });
+  const allSelected = filtered.length > 0 && filtered.every(o => selectedIds.has(o.id));
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(filtered.map(o => o.id)));
+  };
+  const applyBulk = async () => {
+    if (!bulkStatus || selectedIds.size === 0) return;
+    for (const id of selectedIds) await updateOrder(id, { status: bulkStatus });
+    setSelectedIds(new Set());
+    setBulkStatus('');
+  };
+
+  const exportCSV = () => {
+    const rows = [
+      ['Order ID', 'Date', 'Customer', 'Phone', 'City', 'State', 'Pincode', 'Payment', 'Status', 'Items', 'Subtotal', 'Shipping', 'Total'],
+      ...filtered.map(o => [
+        o.id,
+        new Date(o.date).toLocaleDateString('en-IN'),
+        `"${o.customer.name}"`,
+        o.customer.phone,
+        o.customer.city,
+        o.customer.state,
+        o.customer.pincode,
+        o.paymentMethod,
+        o.status,
+        `"${(o.items || []).map(i => `${i.name} x${i.qty}`).join('; ')}"`,
+        (o.total - (o.shipping || 0)),
+        o.shipping || 0,
+        o.total,
+      ])
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders_${filter}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const countBadge = (key) => {
     if (key === 'all') return orders.length;
@@ -159,12 +210,18 @@ export default function AdminOrders() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-forest-700 mb-1">Orders</h1>
-          <p className="text-sm text-warm-brown/60">Manage customer orders — confirm COD calls & approve UPI payments.</p>
+          <p className="text-sm text-warm-brown/60">Manage customer orders — confirm COD calls &amp; approve UPI payments.</p>
         </div>
-        <button onClick={fetchOrders} disabled={loading}
-          className="flex items-center gap-1.5 text-xs font-medium text-warm-brown border border-sand-200 bg-white px-3 py-2 rounded-lg hover:border-sand-300 transition-colors disabled:opacity-50">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 text-xs font-medium text-forest-600 border border-forest-200 bg-forest-50 px-3 py-2 rounded-lg hover:bg-forest-100 transition-colors disabled:opacity-40">
+            <Download size={13} /> Export CSV
+          </button>
+          <button onClick={fetchOrders} disabled={loading}
+            className="flex items-center gap-1.5 text-xs font-medium text-warm-brown border border-sand-200 bg-white px-3 py-2 rounded-lg hover:border-sand-300 transition-colors disabled:opacity-50">
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -193,6 +250,25 @@ export default function AdminOrders() {
         })}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-forest-50 border border-forest-200 rounded-xl px-4 py-2.5 mb-4">
+          <span className="text-xs font-semibold text-forest-700">{selectedIds.size} selected</span>
+          <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}
+            className="text-xs border border-sand-300 rounded-lg px-2 py-1.5 bg-white text-warm-brown">
+            <option value="">Set status…</option>
+            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button onClick={applyBulk} disabled={!bulkStatus}
+            className="text-xs font-semibold bg-forest-500 text-white px-3 py-1.5 rounded-lg hover:bg-forest-600 transition-colors disabled:opacity-40">
+            Apply
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-warm-brown/50 hover:text-warm-brown transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16">
           <Loader2 className="text-terra-400 mx-auto mb-3 animate-spin" size={32} strokeWidth={1.5} />
@@ -204,13 +280,22 @@ export default function AdminOrders() {
           <p className="text-sm text-warm-brown/50">No orders found for this filter.</p>
         </div>
       ) : (
-        <div className="space-y-3">          {filtered.map(order => {
+        <div className="space-y-3">
+          {/* Select all */}
+          <div className="flex items-center gap-2 px-1">
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+              className="accent-terra-500 w-4 h-4 cursor-pointer" />
+            <span className="text-xs text-warm-brown/60">Select all ({filtered.length})</span>
+          </div>
+          {filtered.map(order => {
             const proofSrc = getProofSrc(order);
             const isOpen = expanded === order.id;
             return (
               <div key={order.id} className="bg-white rounded-2xl border border-sand-200 shadow-sm">
                 {/* Order header */}
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => toggleSelect(order.id)}
+                    className="accent-terra-500 w-4 h-4 cursor-pointer flex-shrink-0 self-start mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-warm-brown/50">{order.id}</span>
