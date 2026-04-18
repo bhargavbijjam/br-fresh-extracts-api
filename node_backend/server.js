@@ -1,6 +1,8 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDb } from './src/config/db.js';
@@ -12,8 +14,29 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 dotenv.config();
 
+// Fail fast if critical environment variables are missing
+const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'UPLOAD_SECRET', 'ADMIN_EMAIL', 'ADMIN_PASSWORD'];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`[STARTUP] Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Security headers
+app.use(helmet());
+
+// Rate limiting
+const defaultLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false });
+const authLimiter    = rateLimit({ windowMs: 60 * 1000,       max: 10,  standardHeaders: true, legacyHeaders: false, message: { error: 'Too many requests, please try again later.' } });
+
+app.use('/api', defaultLimiter);
+app.use('/api/auth/check-user/', authLimiter);
+app.use('/api/auth/verify-otp/', authLimiter);
+app.use('/api/auth/login/',      authLimiter);
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')

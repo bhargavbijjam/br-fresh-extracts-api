@@ -125,7 +125,13 @@ export async function listAdminOrders(req, res, next) {
 
 export async function updateAdminOrder(req, res, next) {
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // Whitelist only the fields an admin is allowed to change
+    const ALLOWED = ['status', 'notes', 'payment_mode', 'payment_proof_url', 'shipping', 'total_amount'];
+    const update = {};
+    for (const field of ALLOWED) {
+      if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+    const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!order) return res.status(404).json({ error: 'Not found.' });
     res.json(normalizeOrder(order));
   } catch (err) {

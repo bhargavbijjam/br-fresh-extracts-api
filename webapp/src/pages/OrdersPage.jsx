@@ -20,21 +20,55 @@ function fmt(isoStr) {
 }
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, getValidToken } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
 
+  // Load localStorage orders for the signed-in phone number
+  const loadLocalOrders = (phone) => {
+    const phoneKey = (phone || '').replace(/\D/g, '');
+    if (!phoneKey) return [];
+    try {
+      const byPhone = JSON.parse(localStorage.getItem('so_orders_by_phone') || '{}');
+      const list = Array.isArray(byPhone[phoneKey]) ? byPhone[phoneKey] : [];
+      return list.map(o => ({
+        id: o.id,
+        status: o.status || 'Pending',
+        date: o.date || o.created_at,
+        total: Number(o.total || o.total_amount || 0),
+        shipping: Number(o.shipping || 0),
+        paymentMethod: o.paymentMethod || o.payment_mode || 'COD',
+        customer: o.customer || {},
+        items: (o.items || []).map(i => ({
+          name: i.name || i.product || '',
+          weight: i.weight || '',
+          qty: i.qty || i.quantity || 1,
+          price: Number(i.price || i.price_at_time || 0),
+        })),
+        _fromLocal: true,
+      }));
+    } catch { return []; }
+  };
+
   useEffect(() => {
     if (!user || user.role !== 'customer') { navigate('/login'); return; }
-    const token = user?.tokens?.access;
-    if (!token) { setLoading(false); return; }
 
-    fetch(`${API_URL}orders/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => {
-        setOrders(data.map(o => ({
+    const load = async () => {
+      const token = await getValidToken();
+      const localOrders = loadLocalOrders(user.phone);
+
+      if (!token) {
+        setOrders(localOrders);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}orders/`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = res.ok ? await res.json() : [];
+        const dbOrders = data.map(o => ({
           id: o.id,
           status: o.status || 'Pending',
           date: o.created_at || o.date,
@@ -48,10 +82,21 @@ export default function OrdersPage() {
             qty: i.quantity || i.qty || 1,
             price: Number(i.price_at_time || i.price || 0),
           })),
-        })));
-      })
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+        }));
+
+        // Merge: DB orders are authoritative; add localStorage-only orders not yet in DB
+        const dbIds = new Set(dbOrders.map(o => o.id));
+        const extra = localOrders.filter(o => !dbIds.has(o.id));
+        const merged = [...dbOrders, ...extra].sort((a, b) => new Date(b.date) - new Date(a.date));
+        setOrders(merged);
+      } catch {
+        setOrders(localOrders);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, [user]);
 
   if (loading) return (

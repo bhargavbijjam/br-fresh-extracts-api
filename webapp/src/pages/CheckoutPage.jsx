@@ -54,7 +54,7 @@ export default function CheckoutPage() {
   const { items, total, clearCart, cartKey } = useCart();
   const { store } = useStore();
   const { t, tr, translateAsync } = useLanguage();
-  const { user } = useAuth();
+  const { user, getValidToken } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState(emptyForm);
@@ -206,7 +206,7 @@ export default function CheckoutPage() {
 
     // Save order to backend database
     try {
-      const token = user?.tokens?.access;
+      const token = await getValidToken();
       if (token) {
         const dbRes = await fetch(`${API_URL}orders/`, {
           method: 'POST',

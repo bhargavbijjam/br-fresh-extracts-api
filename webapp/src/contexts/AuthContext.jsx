@@ -4,10 +4,6 @@ const AuthContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/';
 
-// Admin credentials (frontend-only check)
-const ADMIN_EMAIL = 'bijjambhargav@gmail.com';
-const ADMIN_PASS  = '985600@Bh';
-
 const isEmail = (value = '') => value.includes('@');
 
 export function AuthProvider({ children }) {
@@ -19,13 +15,23 @@ export function AuthProvider({ children }) {
   });
 
   const loginAdmin = async (email, password) => {
-    if (isEmail(email) && email === ADMIN_EMAIL && password === ADMIN_PASS) {
-      const u = { email, role: 'admin', name: 'Admin' };
+    if (!isEmail(email)) return { success: false, error: 'Invalid email.' };
+    try {
+      const base = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+      const res = await fetch(`${base}auth/admin-login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error || 'Invalid email or password.' };
+      const u = { email, role: 'admin', name: 'Admin', adminToken: data.token };
       setUser(u);
       localStorage.setItem('so_user', JSON.stringify(u));
       return { success: true, role: 'admin' };
+    } catch {
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
-    return { success: false, error: 'Invalid email or password.' };
   };
 
   // Called after MSG91 widget succeeds with an access-token
@@ -71,12 +77,47 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('so_user');
   };
 
+  // Returns a valid access token, auto-refreshing if it has expired.
+  const getValidToken = async () => {
+    const token = user?.tokens?.access;
+    if (!token) return null;
+    try {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(atob(payload));
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (!decoded.exp || decoded.exp > nowSec + 60) return token; // still valid
+    } catch {
+      return token; // can't decode — just use it as-is
+    }
+    // Token expired or expiring soon — refresh it
+    const refreshTkn = user?.tokens?.refresh;
+    if (!refreshTkn) return null;
+    try {
+      const base = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+      const res = await fetch(`${base}auth/token/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshTkn }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.access) return null;
+      const updatedUser = { ...user, tokens: { ...user.tokens, access: data.access } };
+      setUser(updatedUser);
+      localStorage.setItem('so_user', JSON.stringify(updatedUser));
+      return data.access;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       loginAdmin,
       verifyMsg91Token,
       logout,
+      getValidToken,
       isAdmin: user?.role === 'admin',
     }}>
       {children}

@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import {
+    adminLogin,
     changePassword,
     checkUser,
     login,
@@ -71,6 +72,7 @@ router.delete('/admin/products/:id/', requireSecret, deleteProduct);
 router.post('/upload/', requireSecret, upload.single('file'), uploadImage);
 
 // Auth
+router.post('/auth/admin-login/', adminLogin);
 router.post('/auth/check-user/', checkUser);
 router.post('/auth/login/', login);
 router.post('/auth/verify-otp/', verifyOtpWidget);

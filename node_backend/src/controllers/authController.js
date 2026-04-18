@@ -22,6 +22,28 @@ async function findUserByPhone(phone) {
   return user;
 }
 
+// Admin login — validates against env-var credentials, never hardcoded in frontend
+export async function adminLogin(req, res, next) {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPass  = process.env.ADMIN_PASSWORD;
+    if (!adminEmail || !adminPass) {
+      return res.status(503).json({ error: 'Admin login not configured.' });
+    }
+    if (email !== adminEmail || password !== adminPass) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+    const token = signAccessToken({ role: 'admin', email });
+    return res.json({ token, role: 'admin' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function checkUser(req, res, next) {
   try {
     const phone = req.body?.phone_number;
@@ -134,7 +156,12 @@ export async function profile(req, res, next) {
     }
 
     const patch = req.body || {};
-    Object.assign(user, patch, { is_profile_complete: true });
+    // Whitelist allowed profile fields — prevent mass assignment
+    const ALLOWED = ['name', 'email'];
+    for (const field of ALLOWED) {
+      if (patch[field] !== undefined) user[field] = patch[field];
+    }
+    user.is_profile_complete = true;
     await user.save();
     return res.json(user.toJSON());
   } catch (err) {
