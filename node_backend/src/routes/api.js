@@ -10,6 +10,8 @@ import {
     refreshToken,
     saveCart,
     saveFcmToken,
+    sendOtpProxy,
+    verifyOtpProxy,
     verifyOtpWidget,
 } from '../controllers/authController.js';
 import {
@@ -91,6 +93,8 @@ router.post('/auth/admin-login/', adminLogin);
 router.post('/auth/check-user/', checkUser);
 router.post('/auth/login/', login);
 router.post('/auth/verify-otp/', verifyOtpWidget);
+router.post('/auth/otp/send/', sendOtpProxy);
+router.post('/auth/otp/verify/', verifyOtpProxy);
 router.get('/auth/profile/', requireJwt, profile);
 router.put('/auth/profile/', requireJwt, profile);
 router.post('/auth/change-password/', requireJwt, changePassword);
