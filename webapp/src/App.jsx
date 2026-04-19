@@ -15,6 +15,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import ShopPage from './pages/ShopPage';
 
 import AdminCategories from './pages/admin/AdminCategories';
+import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminExpenses from './pages/admin/AdminExpenses';
 import AdminHero from './pages/admin/AdminHero';
@@ -61,6 +62,7 @@ export default function App() {
                 <Route path="admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="orders"       element={<AdminOrders />} />
+                  <Route path="customers"    element={<AdminCustomers />} />
                   <Route path="expenses"     element={<AdminExpenses />} />
                   <Route path="hero"         element={<AdminHero />} />
                   <Route path="categories"   element={<AdminCategories />} />

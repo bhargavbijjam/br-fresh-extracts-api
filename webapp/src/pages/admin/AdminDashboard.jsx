@@ -1,4 +1,4 @@
-import { ArrowRight, CheckSquare, Grid, Image, MessageSquare, Package, ShoppingCart, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckSquare, Grid, Image, MessageSquare, Package, ShoppingCart, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,6 +9,7 @@ const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
 
 const cards = [
   { label: 'Orders',        to: '/admin/orders',      icon: ShoppingCart,  color: 'bg-amber-50 text-amber-600 border-amber-100' },
+  { label: 'Customers',     to: '/admin/customers',   icon: Users,         color: 'bg-blue-50 text-blue-600 border-blue-100' },
   { label: 'Expenses',      to: '/admin/expenses',    icon: TrendingDown,  color: 'bg-red-50 text-red-500 border-red-100' },
   { label: 'Hero Section',  to: '/admin/hero',        icon: Image,         color: 'bg-terra-50 text-terra-500 border-terra-100' },
   { label: 'Categories',    to: '/admin/categories',  icon: Grid,          color: 'bg-forest-50 text-forest-600 border-forest-100' },

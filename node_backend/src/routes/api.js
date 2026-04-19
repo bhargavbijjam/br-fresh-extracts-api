@@ -21,7 +21,9 @@ import {
 import {
     adminAnalytics,
     createOrder,
+    listAdminCustomers,
     listAdminOrders,
+    listCustomerOrders,
     listUserOrders,
     updateAdminOrder,
 } from '../controllers/ordersController.js';
@@ -60,6 +62,10 @@ router.post('/orders/', requireJwt, createOrder);
 router.get('/admin/analytics/', requireSecret, adminAnalytics);
 router.get('/admin/orders/', requireSecret, listAdminOrders);
 router.put('/admin/orders/:id/', requireSecret, updateAdminOrder);
+
+// Admin customers
+router.get('/admin/customers/', requireSecret, listAdminCustomers);
+router.get('/admin/customers/:phone/orders/', requireSecret, listCustomerOrders);
 
 // Admin store settings
 router.put('/admin/store-settings/', requireSecret, updateStoreSettings);

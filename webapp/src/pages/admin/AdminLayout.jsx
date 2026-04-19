@@ -9,7 +9,8 @@ import {
     Package,
     Settings,
     ShoppingCart,
-    TrendingDown
+    TrendingDown,
+    Users,
 } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const navItems = [
   { to: '/admin',              label: 'Dashboard',   icon: LayoutDashboard, end: true },
   { to: '/admin/orders',       label: 'Orders',       icon: ShoppingCart },
+  { to: '/admin/customers',    label: 'Customers',    icon: Users },
   { to: '/admin/expenses',     label: 'Expenses',     icon: TrendingDown },
   { to: '/admin/hero',         label: 'Hero Section', icon: Image },
   { to: '/admin/categories',   label: 'Categories',   icon: Grid },

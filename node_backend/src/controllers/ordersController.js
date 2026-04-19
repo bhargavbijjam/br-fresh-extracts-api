@@ -159,3 +159,63 @@ export async function adminAnalytics(req, res, next) {
     next(err);
   }
 }
+
+export async function listAdminCustomers(req, res, next) {
+  try {
+    const customers = await Order.aggregate([
+      { $sort: { created_at: -1 } },
+      {
+        $group: {
+          _id: '$phone_number',
+          name:          { $first: '$customer.name' },
+          phone:         { $first: '$customer.phone' },
+          email:         { $first: '$customer.email' },
+          address:       { $first: '$customer.address' },
+          city:          { $first: '$customer.city' },
+          state:         { $first: '$customer.state' },
+          pincode:       { $first: '$customer.pincode' },
+          totalOrders:   { $sum: 1 },
+          totalSpent:    { $sum: '$total_amount' },
+          lastOrderDate: { $max: '$created_at' },
+          statuses:      { $push: '$status' },
+        },
+      },
+      { $sort: { lastOrderDate: -1 } },
+    ]);
+
+    const result = customers.map(c => ({
+      phone:         c._id || c.phone || '',
+      name:          c.name || 'Unknown',
+      email:         c.email || '',
+      address:       [c.address, c.city, c.state, c.pincode].filter(Boolean).join(', '),
+      totalOrders:   c.totalOrders,
+      totalSpent:    Number(c.totalSpent || 0),
+      lastOrderDate: c.lastOrderDate,
+      statusBreakdown: (c.statuses || []).reduce((acc, s) => {
+        acc[s] = (acc[s] || 0) + 1;
+        return acc;
+      }, {}),
+    }));
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listCustomerOrders(req, res, next) {
+  try {
+    const phone = decodeURIComponent(req.params.phone || '');
+    if (!phone) return res.status(400).json({ error: 'Phone required' });
+
+    // Match both +91XXXXXXXXXX and plain 10-digit formats
+    const phoneVariants = [phone];
+    if (phone.startsWith('+91')) phoneVariants.push(phone.replace('+91', ''));
+    else phoneVariants.push(`+91${phone}`);
+
+    const orders = await Order.find({ phone_number: { $in: phoneVariants } }).sort({ created_at: -1 });
+    res.json(orders.map(normalizeOrder));
+  } catch (err) {
+    next(err);
+  }
+}
