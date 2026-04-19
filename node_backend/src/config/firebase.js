@@ -9,7 +9,7 @@ export function initFirebase() {
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
   if (keyJson) {
-    const serviceAccount = JSON.parse(keyJson);
+    const serviceAccount = JSON.parse(keyJson.replace(/\\n/g, '\n'));
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     initialized = true;
     return;
