@@ -73,10 +73,15 @@ export default function LoginPage() {
     const send = () => {
       if (!window.sendOtp) { setError('OTP service not loaded. Please refresh.'); return; }
       setLoading(true);
+      // Timeout fallback: MSG91 widget callbacks may silently fail in Capacitor WebView
+      const timeout = setTimeout(() => {
+        setLoading(false);
+        setError('OTP request timed out. Please check your internet connection and try again.');
+      }, 15000);
       window.sendOtp(
         identifier,
-        () => { setLoading(false); setStep('otp'); setError(''); },
-        (err) => { setLoading(false); setError(err?.message || 'Failed to send OTP. Try again.'); }
+        () => { clearTimeout(timeout); setLoading(false); setStep('otp'); setError(''); },
+        (err) => { clearTimeout(timeout); setLoading(false); setError(err?.message || 'Failed to send OTP. Try again.'); }
       );
     };
     if (widgetReadyRef.current) { send(); return; }
