@@ -41,7 +41,7 @@ app.use('/api/auth/check-user/', authLimiter);
 app.use('/api/auth/verify-otp/', authLimiter);
 app.use('/api/auth/login/',      authLimiter);
 
-const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+const customOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -52,17 +52,21 @@ const defaultOrigins = [
   'https://br-fresh-extracts-webapp.onrender.com',
   'https://www.brfreshextracts.co.in',
   'https://brfreshextracts.co.in',
-  // Capacitor Android WebView origins
+  // Capacitor Android WebView origins — always allowed regardless of CORS_ALLOWED_ORIGINS
   'capacitor://localhost',
   'https://localhost',
   'http://localhost',
 ];
 
+// Merge: custom origins from env + always-allowed defaults
+const allowedOrigins = customOrigins.length
+  ? [...new Set([...customOrigins, ...defaultOrigins])]
+  : defaultOrigins;
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    const list = allowedOrigins.length ? allowedOrigins : defaultOrigins;
-    if (list.includes(origin) || /https:\/\/.*\.vercel\.app$/.test(origin)) {
+    if (allowedOrigins.includes(origin) || /https:\/\/.*\.vercel\.app$/.test(origin)) {
       return cb(null, true);
     }
     return cb(new Error('Not allowed by CORS'));

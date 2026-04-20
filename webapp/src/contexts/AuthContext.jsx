@@ -29,8 +29,9 @@ export function AuthProvider({ children }) {
       setUser(u);
       localStorage.setItem('so_user', JSON.stringify(u));
       return { success: true, role: 'admin' };
-    } catch {
-      return { success: false, error: 'Network error. Please check your connection.' };
+    } catch (err) {
+      console.error('[loginAdmin] fetch error:', err?.message || err);
+      return { success: false, error: `Network error: ${err?.message || 'unknown'}` };
     }
   };
 
@@ -71,7 +72,7 @@ export function AuthProvider({ children }) {
       return { success: true, role: 'customer' };
     } catch (err) {
       console.error('[verifyMsg91Token] error:', err);
-      return { success: false, error: 'Network error. Please check your connection.' };
+      return { success: false, error: `Network error: ${err?.message || 'unknown'}` };
     }
   };
 
