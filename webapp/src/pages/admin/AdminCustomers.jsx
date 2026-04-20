@@ -11,11 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-const API_URL = (() => {
-    const u = import.meta.env.VITE_API_URL || '/api/';
-    return u.endsWith('/') ? u : u + '/';
-})();
-const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
+import { ADMIN_API_URL as API_URL, adminHeaders } from '../../lib/adminApi';
 
 const STATUS_COLORS = {
     Pending:   'bg-amber-50 text-amber-700 border-amber-200',
@@ -92,7 +88,7 @@ function CustomerRow({ customer }) {
             try {
                 const phone = encodeURIComponent(customer.phone);
                 const res = await fetch(`${API_URL}admin/customers/${phone}/orders/`, {
-                    headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+                    headers: adminHeaders(false),
                 });
                 if (res.ok) setOrders(await res.json());
             } catch { /* non-critical */ }
@@ -197,7 +193,7 @@ export default function AdminCustomers() {
         setLoading(true);
         try {
             const res = await fetch(`${API_URL}admin/customers/`, {
-                headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+                headers: adminHeaders(false),
             });
             if (res.ok) setCustomers(await res.json());
         } catch { /* non-critical */ }

@@ -1,17 +1,8 @@
 import { Pencil, Plus, Save, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ImageUpload from '../../components/ui/ImageUpload';
+import { ADMIN_API_URL as API_URL, adminHeaders, fetchAdminArray } from '../../lib/adminApi';
 
-const _raw = import.meta.env.VITE_API_URL || '/api/';
-const API_URL = _raw.endsWith('/') ? _raw : _raw + '/';
-const SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
-
-function apiHeaders(json = true) {
-  const h = {};
-  if (SECRET) h['X-Upload-Secret'] = SECRET;
-  if (json) h['Content-Type'] = 'application/json';
-  return h;
-}
 
 const empty = { name: '', category: '', price: '', weight: '', image: '', description: '', featured: false, stock: '', variants: [{ size: '', price: '' }] };
 
@@ -25,12 +16,10 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false);
 
   const fetchProducts = () =>
-    fetch(`${API_URL}admin/products/`, { headers: apiHeaders(false) })
-      .then(r => r.json()).then(setProducts).catch(() => {});
+    fetchAdminArray(`${API_URL}admin/products/`).then(setProducts);
 
   const fetchCategories = () =>
-    fetch(`${API_URL}categories/`)
-      .then(r => r.json()).then(setApiCategories).catch(() => {});
+    fetchAdminArray(`${API_URL}categories/`).then(setApiCategories);
 
   useEffect(() => { fetchProducts(); fetchCategories(); }, []);
 
@@ -61,7 +50,7 @@ export default function AdminProducts() {
       const payload = { ...form, price: firstVariant.price, weight: firstVariant.size, variants, stock: stockVal };
       const url    = editing ? `${API_URL}admin/products/${editing}/` : `${API_URL}admin/products/`;
       const method = editing ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: apiHeaders(), body: JSON.stringify(payload) });
+      const res = await fetch(url, { method, headers: adminHeaders(), body: JSON.stringify(payload) });
       if (res.ok) { fetchProducts(); cancel(); }
     } finally {
       setSaving(false);
@@ -70,7 +59,7 @@ export default function AdminProducts() {
 
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"?`)) return;
-    await fetch(`${API_URL}admin/products/${id}/`, { method: 'DELETE', headers: apiHeaders(false) });
+    await fetch(`${API_URL}admin/products/${id}/`, { method: 'DELETE', headers: adminHeaders(false) });
     fetchProducts();
   };
 

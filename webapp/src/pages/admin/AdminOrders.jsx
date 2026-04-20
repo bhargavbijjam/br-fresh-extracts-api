@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
-const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
+import { ADMIN_API_URL as API_URL, adminHeaders } from '../../lib/adminApi';
 
 const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'];
 
@@ -92,7 +91,7 @@ export default function AdminOrders() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}admin/orders/`, {
-        headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+        headers: adminHeaders(false),
       });
       if (res.ok) {
         const data = await res.json();
@@ -118,10 +117,7 @@ export default function AdminOrders() {
       try {
         await fetch(`${API_URL}admin/orders/${id}/`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {}),
-          },
+          headers: adminHeaders(),
           body: JSON.stringify(patch),
         });
       } catch { /* non-critical */ }

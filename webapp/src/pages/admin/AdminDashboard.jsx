@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStore } from '../../contexts/StoreContext';
 
-const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
-const UPLOAD_SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
+import { ADMIN_API_URL as API_URL, adminHeaders } from '../../lib/adminApi';
 
 const cards = [
   { label: 'Orders',        to: '/admin/orders',      icon: ShoppingCart,  color: 'bg-amber-50 text-amber-600 border-amber-100' },
@@ -43,7 +42,7 @@ export default function AdminDashboard() {
   // Fetch orders from backend; fall back to localStorage
   useEffect(() => {
     fetch(`${API_URL}admin/orders/`, {
-      headers: UPLOAD_SECRET ? { 'X-Upload-Secret': UPLOAD_SECRET } : {},
+      headers: adminHeaders(false),
     })
       .then(r => r.ok ? r.json() : null)
       .then(data => {

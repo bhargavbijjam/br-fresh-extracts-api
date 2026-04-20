@@ -13,9 +13,30 @@ import {
     TrendingDown,
     Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { Component, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+
+class AdminErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+          <p className="text-2xl">⚠️</p>
+          <p className="font-semibold text-forest-700">Something went wrong</p>
+          <p className="text-sm text-warm-brown/60">{this.state.error?.message || 'An unexpected error occurred.'}</p>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="mt-2 px-4 py-2 bg-terra-500 text-white rounded-lg text-sm hover:bg-terra-600 transition-colors"
+          >Try again</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const navItems = [
   { to: '/admin',              label: 'Dashboard',   icon: LayoutDashboard, end: true },
@@ -129,7 +150,9 @@ export default function AdminLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <AdminErrorBoundary>
+            <Outlet />
+          </AdminErrorBoundary>
         </main>
       </div>
     </div>

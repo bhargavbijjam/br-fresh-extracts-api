@@ -1,17 +1,7 @@
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ImageUpload from '../../components/ui/ImageUpload';
-
-const _raw = import.meta.env.VITE_API_URL || '/api/';
-const API_URL = _raw.endsWith('/') ? _raw : _raw + '/';
-const SECRET = import.meta.env.VITE_UPLOAD_SECRET || '';
-
-function apiHeaders(json = true) {
-  const h = {};
-  if (SECRET) h['X-Upload-Secret'] = SECRET;
-  if (json) h['Content-Type'] = 'application/json';
-  return h;
-}
+import { ADMIN_API_URL as API_URL, adminHeaders, fetchAdminArray } from '../../lib/adminApi';
 
 const empty = { name: '', description: '', image: '', icon: '🌿' };
 
@@ -25,10 +15,8 @@ export default function AdminCategories() {
 
   const fetchCategories = () => {
     setLoading(true);
-    fetch(`${API_URL}categories/`)
-      .then(r => r.json())
-      .then(data => { setCategories(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    fetchAdminArray(`${API_URL}categories/`)
+      .then(data => { setCategories(data); setLoading(false); });
   };
 
   useEffect(() => { fetchCategories(); }, []);
@@ -49,7 +37,7 @@ export default function AdminCategories() {
     try {
       const url    = editing ? `${API_URL}admin/categories/${editing}/` : `${API_URL}admin/categories/`;
       const method = editing ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: apiHeaders(), body: JSON.stringify(form) });
+      const res = await fetch(url, { method, headers: adminHeaders(), body: JSON.stringify(form) });
       if (res.ok) { fetchCategories(); cancel(); }
     } finally {
       setSaving(false);
@@ -58,7 +46,7 @@ export default function AdminCategories() {
 
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"?`)) return;
-    await fetch(`${API_URL}admin/categories/${id}/`, { method: 'DELETE', headers: apiHeaders(false) });
+    await fetch(`${API_URL}admin/categories/${id}/`, { method: 'DELETE', headers: adminHeaders(false) });
     fetchCategories();
   };
 
