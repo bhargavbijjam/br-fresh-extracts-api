@@ -116,6 +116,15 @@ const API_URL = _rawApi.endsWith('/') ? _rawApi : _rawApi + '/';
 function saveStoreSettings(patch) {
   const headers = { 'Content-Type': 'application/json' };
   if (UPLOAD_SECRET) headers['X-Upload-Secret'] = UPLOAD_SECRET;
+  // Also send admin JWT so the request is authenticated even if UPLOAD_SECRET is not set
+  try {
+    const stored = localStorage.getItem('so_user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      const token = u?.adminToken || u?.tokens?.access;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch { /* ignore */ }
   fetch(`${API_URL}admin/store-settings/`, {
     method: 'PUT',
     headers,
