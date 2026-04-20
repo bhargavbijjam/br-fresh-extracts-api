@@ -7,15 +7,30 @@ export function initFirebase() {
   if (initialized) return;
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH;
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const keyBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
 
-  if (keyJson) {
-    let serviceAccount;
+  let serviceAccount;
+
+  if (keyBase64) {
+    // Most reliable: base64-encoded JSON avoids all escaping issues
+    const decoded = Buffer.from(keyBase64.trim(), 'base64').toString('utf-8');
+    serviceAccount = JSON.parse(decoded);
+  } else if (keyJson) {
+    let raw = keyJson.trim();
+    // Try direct parse first
     try {
-      serviceAccount = JSON.parse(keyJson);
+      serviceAccount = JSON.parse(raw);
     } catch {
-      serviceAccount = JSON.parse(keyJson.replace(/\\n/g, '\n'));
+      // Try replacing literal \n sequences then parse
+      try {
+        serviceAccount = JSON.parse(raw.replace(/\\n/g, '\n'));
+      } catch (e2) {
+        console.error('[Firebase] JSON parse failed:', e2.message);
+        console.error('[Firebase] keyJson first 100 chars:', raw.slice(0, 100));
+        return;
+      }
     }
-    // If Render stored the JSON as a quoted string, parse again
+    // If it came out as a string (double-stringified), parse again
     if (typeof serviceAccount === 'string') {
       serviceAccount = JSON.parse(serviceAccount);
     }
@@ -23,20 +38,17 @@ export function initFirebase() {
     if (typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
-    console.log('[Firebase] parsed service account keys:', Object.keys(serviceAccount));
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    initialized = true;
+  } else if (keyPath && fs.existsSync(keyPath)) {
+    serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf-8'));
+  } else {
+    console.warn('[Firebase] No service account configured. Phone auth disabled.');
     return;
   }
 
-  if (keyPath && fs.existsSync(keyPath)) {
-    const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf-8'));
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    initialized = true;
-    return;
-  }
-
-  console.warn('FIREBASE_SERVICE_ACCOUNT_KEY_PATH/JSON not set. Firebase auth disabled.');
+  console.log('[Firebase] service account project_id:', serviceAccount.project_id);
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  initialized = true;
+  console.log('[Firebase] Admin SDK initialized OK');
 }
 
 export function firebaseAdmin() {
