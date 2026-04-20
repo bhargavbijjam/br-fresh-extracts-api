@@ -125,3 +125,29 @@ export async function sendPushToAllUsers(title, body) {
     console.warn('[FCM] Broadcast push failed:', err.message);
   }
 }
+
+/**
+ * Send a push notification to all admin/staff users (is_staff: true).
+ */
+export async function sendPushToAdmins(title, body, data = {}) {
+  if (!initialized) return;
+  try {
+    const User = (await import('../models/User.js')).default;
+    const adminUsers = await User.find({ is_staff: true, fcm_tokens: { $exists: true, $not: { $size: 0 } } })
+      .select('_id fcm_tokens').lean();
+    const stringData = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, String(v)])
+    );
+    for (const adminUser of adminUsers) {
+      const tokens = (adminUser.fcm_tokens || []).filter(Boolean);
+      if (tokens.length === 0) continue;
+      await admin.messaging().sendEachForMulticast({
+        notification: { title, body },
+        data: stringData,
+        tokens,
+      });
+    }
+  } catch (err) {
+    console.warn('[FCM] Admin push failed:', err.message);
+  }
+}

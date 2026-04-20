@@ -1,4 +1,4 @@
-import { sendPushNotification } from '../config/firebase.js';
+import { sendPushNotification, sendPushToAdmins } from '../config/firebase.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
@@ -118,6 +118,14 @@ export async function createOrder(req, res, next) {
         `We have received your order worth ₹${computedTotal}. Our team will review and confirm it shortly. We appreciate your trust in BR Fresh Extracts.`
       );
     }
+
+    // Notify all admins about the new order
+    const customerName = customer?.name || user?.name || 'A customer';
+    sendPushToAdmins(
+      'New Order Received',
+      `${customerName} placed an order worth ₹${computedTotal}. Please review and confirm it.`,
+      { action: 'admin_order', order_id: String(order._id) }
+    );
 
     res.status(201).json(normalizeOrder(order));
   } catch (err) {
