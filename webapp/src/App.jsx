@@ -22,6 +22,7 @@ import AdminExpenses from './pages/admin/AdminExpenses';
 import AdminHero from './pages/admin/AdminHero';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminPageContent from './pages/admin/AdminPageContent';
 import AdminPrivacyPolicy from './pages/admin/AdminPrivacyPolicy';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -168,6 +169,7 @@ export default function App() {
                   <Route path="customers"    element={<AdminCustomers />} />
                   <Route path="expenses"     element={<AdminExpenses />} />
                   <Route path="hero"         element={<AdminHero />} />
+                  <Route path="page-content"  element={<AdminPageContent />} />
                   <Route path="categories"   element={<AdminCategories />} />
                   <Route path="products"     element={<AdminProducts />} />
                   <Route path="testimonials" element={<AdminTestimonials />} />

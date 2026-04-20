@@ -2,11 +2,14 @@ import { ArrowRight, Leaf } from 'lucide-react';
 import { useState } from 'react';
 import AnimatedSection from '../components/ui/AnimatedSection';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useStore } from '../contexts/StoreContext';
 
 export default function Newsletter() {
   const [email, setEmail] = useState('');
   const [done, setDone] = useState(false);
   const { t } = useLanguage();
+  const { store } = useStore();
+  const { pageCopy } = store;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -22,10 +25,10 @@ export default function Newsletter() {
         <AnimatedSection>
           <Leaf className="text-terra-400 mx-auto mb-5" size={28} />
           <h2 className="font-serif text-4xl md:text-5xl text-forest-700 font-light mb-4">
-            {t('newsletter.title')}
+            {pageCopy.newsletterTitle || t('newsletter.title')}
           </h2>
           <p className="text-warm-brown/65 text-base mb-8 leading-relaxed">
-            {t('newsletter.subtitle')}
+            {pageCopy.newsletterSubtitle || t('newsletter.subtitle')}
           </p>
 
           {done ? (

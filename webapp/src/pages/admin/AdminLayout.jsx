@@ -11,6 +11,7 @@ import {
     Settings,
     ShoppingCart,
     TrendingDown,
+    Type,
     Users,
 } from 'lucide-react';
 import { Component, useState } from 'react';
@@ -44,6 +45,7 @@ const navItems = [
   { to: '/admin/customers',    label: 'Customers',    icon: Users },
   { to: '/admin/expenses',     label: 'Expenses',     icon: TrendingDown },
   { to: '/admin/hero',         label: 'Hero Section', icon: Image },
+  { to: '/admin/page-content',  label: 'Page Content',  icon: Type },
   { to: '/admin/categories',   label: 'Categories',   icon: Grid },
   { to: '/admin/products',     label: 'Products',     icon: Package },
   { to: '/admin/testimonials', label: 'Testimonials', icon: MessageSquare },

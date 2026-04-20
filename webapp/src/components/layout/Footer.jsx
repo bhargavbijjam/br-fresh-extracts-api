@@ -24,7 +24,7 @@ export default function Footer() {
             <span className="font-serif text-2xl text-cream font-semibold">BR Fresh Extracts</span>
           </div>
           <p className="text-cream/60 text-sm leading-relaxed max-w-xs">
-            {t('footer.tagline')}
+            {store.pageCopy?.footerTagline || t('footer.tagline')}
           </p>
           <p className="mt-4 text-xs text-cream/40 tracking-widest uppercase">{s.address}</p>
           <div className="flex items-center gap-3 mt-6">

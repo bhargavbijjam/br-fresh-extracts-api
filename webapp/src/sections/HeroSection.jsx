@@ -7,7 +7,7 @@ import { useParallax3D } from '../hooks/useScrollAnimation';
 export default function HeroSection() {
   const { store } = useStore();
   const { t, tr, lang } = useLanguage();
-  const { title, subtitle, ctaText, backgroundImage } = store.hero;
+  const { title, subtitle, ctaText, backgroundImage, tagline, trustBadge1, trustBadge2, trustBadge3, viewAllText } = store.hero;
   const [bgRef, bgStyle] = useParallax3D({ intensity: 0.18, rotate: 4, perspective: 900 });
   const [contentRef, contentStyle] = useParallax3D({ intensity: 0.1, rotate: -3, perspective: 900 });
 
@@ -40,7 +40,7 @@ export default function HeroSection() {
       {/* Content */}
       <div ref={contentRef} style={contentStyle} className="relative z-10 text-center px-6 max-w-4xl mx-auto will-change-transform">
         <p className="font-sans text-terra-300 tracking-[0.3em] text-xs md:text-sm uppercase mb-6 animate-[fadeIn_1s_ease_both]">
-          {t('hero.tagline')}
+          {tagline || t('hero.tagline')}
         </p>
         <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-cream font-light leading-[1.1] mb-6 whitespace-pre-line text-balance">
           {heroTitle}
@@ -54,13 +54,13 @@ export default function HeroSection() {
             {heroCta} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link to="/shop" className="text-cream/70 hover:text-cream font-sans text-sm tracking-widest uppercase transition-colors">
-            {t('hero.viewAll')}
+            {viewAllText || t('hero.viewAll')}
           </Link>
         </div>
 
         {/* Trust badges */}
         <div className="flex items-center justify-center gap-6 mt-14 flex-wrap">
-          {['FSSAI Certified', 'Farm Fresh', 'Pan India Delivery'].map(b => (
+          {[trustBadge1 || 'FSSAI Certified', trustBadge2 || 'Farm Fresh', trustBadge3 || 'Pan India Delivery'].map(b => (
             <span key={b} className="text-cream/50 text-xs tracking-widest uppercase flex items-center gap-1.5">
               <span className="w-1 h-1 rounded-full bg-terra-400 inline-block" />
               {b}

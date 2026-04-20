@@ -23,6 +23,11 @@ const defaultData = {
     subtitle: 'Discover the finest organic spices, teas, ghee & oils sourced directly from certified Indian farms — unprocessed, uncompromised.',
     ctaText: 'Shop Now',
     backgroundImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&q=80',
+    tagline: '100% Organic · Farm to Table · Hyderabad',
+    trustBadge1: 'FSSAI Certified',
+    trustBadge2: 'Farm Fresh',
+    trustBadge3: 'Pan India Delivery',
+    viewAllText: 'View All Products',
   },
   categories: [
     { id: 'cat1', name: 'Spices', description: 'Handpicked aromatic spices from India\'s finest farms', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80', icon: '🌶️' },
@@ -51,6 +56,18 @@ const defaultData = {
     { id: 'w3', title: 'FSSAI Certified', description: 'All products are FSSAI licensed, lab-tested and certified for quality & safety.', icon: 'shield' },
     { id: 'w4', title: 'Pan India Delivery', description: 'Free shipping on orders above ₹499. Delivered to your doorstep across India.', icon: 'truck' },
   ],
+  pageCopy: {
+    categoriesKicker: 'What We Offer',
+    categoriesTitle: 'Our Collections',
+    categoriesSubtitle: 'Every category, curated for purity and flavour from farms we personally trust.',
+    featuredKicker: 'Bestsellers',
+    featuredTitle: 'Featured Products',
+    whyKicker: 'Why BR Fresh?',
+    whyTitle: 'Our Promise to You',
+    newsletterTitle: 'Stay in the Loop',
+    newsletterSubtitle: 'Join our community for seasonal recipes, farm stories, exclusive offers and new product launches.',
+    footerTagline: 'Pure, certified organic products sourced directly from Indian farms. No compromise on quality, no compromise on nature.',
+  },
   privacyPolicy: `Privacy Policy for BR Fresh Extracts
 Last updated: April 20, 2026
 
@@ -123,6 +140,7 @@ function load() {
       ...defaultData,
       ...stored,
       settings: { ...defaultData.settings, ...(stored.settings || {}) },
+      pageCopy: { ...defaultData.pageCopy, ...(stored.pageCopy || {}) },
       // Always start with empty products/categories — the API fetch will populate them
       products: [],
       categories: [],
@@ -155,6 +173,7 @@ export function StoreProvider({ children }) {
           testimonials: storeSettings.testimonials?.length ? storeSettings.testimonials : prev.testimonials,
           whyUs: storeSettings.whyUs?.length ? storeSettings.whyUs : prev.whyUs,
           privacyPolicy: storeSettings.privacyPolicy || prev.privacyPolicy,
+          pageCopy: storeSettings.pageCopy ? { ...defaultData.pageCopy, ...storeSettings.pageCopy } : prev.pageCopy,
         } : {}),
         categories: cats.length ? cats.map(c => ({
           id: String(c.id),
@@ -282,6 +301,17 @@ export function StoreProvider({ children }) {
     });
   };
 
+  // Page copy — persisted to backend
+  const updatePageCopy = (patch) => {
+    setStore(prev => {
+      const newPageCopy = { ...prev.pageCopy, ...patch };
+      const next = { ...prev, pageCopy: newPageCopy };
+      try { localStorage.setItem('so_store', JSON.stringify(next)); } catch {}
+      saveStoreSettings({ pageCopy: newPageCopy });
+      return next;
+    });
+  };
+
   const updatePrivacyPolicy = (content) => {
     setStore(prev => {
       const next = { ...prev, privacyPolicy: content };
@@ -302,6 +332,7 @@ export function StoreProvider({ children }) {
       addProduct,  updateProduct,  deleteProduct,
       addTestimonial, updateTestimonial, deleteTestimonial,
       addWhyUs, updateWhyUs, deleteWhyUs,
+      updatePageCopy,
       updatePrivacyPolicy,
       resetStore,
     }}>

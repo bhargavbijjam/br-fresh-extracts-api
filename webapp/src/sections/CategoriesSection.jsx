@@ -7,16 +7,17 @@ import { useParallax3D } from '../hooks/useScrollAnimation';
 export default function CategoriesSection() {
   const { store } = useStore();
   const { t, tr } = useLanguage();
+  const { pageCopy } = store;
   const [sectionRef, sectionStyle] = useParallax3D({ intensity: 0.08, rotate: 2, perspective: 1000 });
 
   return (
     <section className="py-20 md:py-28 bg-ivory">
       <div ref={sectionRef} style={sectionStyle} className="max-w-7xl mx-auto px-6 will-change-transform">
         <AnimatedSection className="text-center mb-14">
-          <p className="text-terra-500 tracking-[0.25em] text-xs uppercase font-sans mb-3">{t('categories.kicker')}</p>
-          <h2 className="section-title">{t('categories.title')}</h2>
+          <p className="text-terra-500 tracking-[0.25em] text-xs uppercase font-sans mb-3">{pageCopy.categoriesKicker || t('categories.kicker')}</p>
+          <h2 className="section-title">{pageCopy.categoriesTitle || t('categories.title')}</h2>
           <p className="section-subtitle mt-3 max-w-lg mx-auto">
-            {t('categories.subtitle')}
+            {pageCopy.categoriesSubtitle || t('categories.subtitle')}
           </p>
         </AnimatedSection>
 

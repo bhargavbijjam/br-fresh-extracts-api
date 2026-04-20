@@ -68,6 +68,7 @@ function ProductCard({ product }) {
 export default function FeaturedProducts() {
   const { store } = useStore();
   const { t } = useLanguage();
+  const { pageCopy } = store;
   const featured = store.products.filter(p => p.featured);
   const [sectionRef, sectionStyle] = useParallax3D({ intensity: 0.06, rotate: 2, perspective: 1000 });
 
@@ -76,8 +77,8 @@ export default function FeaturedProducts() {
       <div ref={sectionRef} style={sectionStyle} className="max-w-7xl mx-auto px-6 will-change-transform">
         <AnimatedSection className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
-            <p className="text-terra-500 tracking-[0.25em] text-xs uppercase font-sans mb-3">{t('featured.kicker')}</p>
-            <h2 className="section-title">{t('featured.title')}</h2>
+            <p className="text-terra-500 tracking-[0.25em] text-xs uppercase font-sans mb-3">{pageCopy.featuredKicker || t('featured.kicker')}</p>
+            <h2 className="section-title">{pageCopy.featuredTitle || t('featured.title')}</h2>
           </div>
           <Link to="/shop" className="btn-ghost flex items-center gap-1.5 shrink-0">
             {t('featured.viewAll')} <ArrowRight size={15} />

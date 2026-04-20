@@ -49,6 +49,36 @@ export default function AdminHero() {
             <input type="text" className="input-field"
               value={form.ctaText} onChange={e => set('ctaText', e.target.value)} />
           </div>
+          <div>
+            <label className="label">"View All Products" Link Text</label>
+            <input type="text" className="input-field"
+              value={form.viewAllText || ''} onChange={e => set('viewAllText', e.target.value)}
+              placeholder="View All Products" />
+          </div>
+        </div>
+
+        <div className="admin-card space-y-5">
+          <h2 className="font-serif text-lg text-forest-700">Top Tagline</h2>
+          <div>
+            <label className="label">Tagline Text</label>
+            <input type="text" className="input-field"
+              value={form.tagline || ''} onChange={e => set('tagline', e.target.value)}
+              placeholder="100% Organic · Farm to Table · Hyderabad" />
+            <p className="text-xs text-warm-brown/40 mt-1">Shown above the main title in small caps.</p>
+          </div>
+        </div>
+
+        <div className="admin-card space-y-4">
+          <h2 className="font-serif text-lg text-forest-700">Trust Badges</h2>
+          <p className="text-xs text-warm-brown/50 -mt-1">The three badges at the bottom of the hero section.</p>
+          {[['trustBadge1', 'Badge 1', 'FSSAI Certified'], ['trustBadge2', 'Badge 2', 'Farm Fresh'], ['trustBadge3', 'Badge 3', 'Pan India Delivery']].map(([key, label, placeholder]) => (
+            <div key={key}>
+              <label className="label">{label}</label>
+              <input type="text" className="input-field"
+                value={form[key] || ''} onChange={e => set(key, e.target.value)}
+                placeholder={placeholder} />
+            </div>
+          ))}
         </div>
 
         <div className="admin-card space-y-4">

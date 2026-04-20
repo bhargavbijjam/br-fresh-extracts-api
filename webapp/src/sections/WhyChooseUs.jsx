@@ -9,6 +9,7 @@ const iconMap = { leaf: Leaf, sprout: Sprout, shield: ShieldCheck, truck: Truck 
 export default function WhyChooseUs() {
   const { store } = useStore();
   const { t, tr } = useLanguage();
+  const { pageCopy } = store;
   const [sectionRef, sectionStyle] = useParallax3D({ intensity: 0.05, rotate: 2, perspective: 1000 });
 
   return (
@@ -19,9 +20,9 @@ export default function WhyChooseUs() {
 
       <div ref={sectionRef} style={sectionStyle} className="relative z-10 max-w-7xl mx-auto px-6 will-change-transform">
         <AnimatedSection className="text-center mb-14">
-          <p className="text-terra-300 tracking-[0.25em] text-xs uppercase font-sans mb-3">{t('why.kicker')}</p>
+          <p className="text-terra-300 tracking-[0.25em] text-xs uppercase font-sans mb-3">{pageCopy.whyKicker || t('why.kicker')}</p>
           <h2 className="font-serif text-4xl md:text-5xl text-cream font-light leading-tight">
-            {t('why.title')}
+            {pageCopy.whyTitle || t('why.title')}
           </h2>
           <div className="w-12 h-px bg-terra-400 mx-auto mt-4" />
         </AnimatedSection>
