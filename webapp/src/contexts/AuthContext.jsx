@@ -18,11 +18,15 @@ export function AuthProvider({ children }) {
     if (!isEmail(email)) return { success: false, error: 'Invalid email.' };
     try {
       const base = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 60000); // 60s timeout for cold start
       const res = await fetch(`${base}auth/admin-login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       const data = await res.json();
       if (!res.ok) return { success: false, error: data.error || 'Invalid email or password.' };
       const u = { email, role: 'admin', name: 'Admin', adminToken: data.token };
@@ -31,6 +35,7 @@ export function AuthProvider({ children }) {
       return { success: true, role: 'admin' };
     } catch (err) {
       console.error('[loginAdmin] fetch error:', err?.message || err);
+      if (err?.name === 'AbortError') return { success: false, error: 'Request timed out. Server may be starting up — please try again.' };
       return { success: false, error: `Network error: ${err?.message || 'unknown'}` };
     }
   };
