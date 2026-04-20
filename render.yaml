@@ -42,3 +42,7 @@ services:
         value: https://libretranslate.com/translate
       - key: TRANSLATE_API_KEY
         sync: false
+      - key: MSG91_AUTH_KEY
+        sync: false
+      - key: MSG91_WIDGET_ID
+        sync: false

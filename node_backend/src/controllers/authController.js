@@ -198,18 +198,27 @@ export async function refreshToken(req, res, next) {
   }
 }
 
-// Proxy: send OTP via MSG91 REST API (used by Android app to bypass widget CORS)
+// Proxy: send OTP via MSG91 Widget API (used by Android app to bypass widget CORS)
 export async function sendOtpProxy(req, res, next) {
   try {
     const { mobile } = req.body || {};
     if (!mobile) return res.status(400).json({ error: 'mobile required' });
     const authKey = process.env.MSG91_AUTH_KEY;
-    const templateId = process.env.MSG91_OTP_TEMPLATE_ID;
+    const widgetId = process.env.MSG91_WIDGET_ID;
     if (!authKey) return res.status(500).json({ error: 'MSG91_AUTH_KEY not configured.' });
+    if (!widgetId) return res.status(500).json({ error: 'MSG91_WIDGET_ID not configured.' });
 
-    const url = `https://control.msg91.com/api/v5/otp?template_id=${templateId || ''}&mobile=${encodeURIComponent(mobile)}&authkey=${authKey}`;
-    const r = await fetch(url, { method: 'POST' });
+    const r = await fetch('https://control.msg91.com/api/v5/widget/initiate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'authKey': authKey,
+        'Widget-Id': widgetId,
+      },
+      body: JSON.stringify({ identifier: mobile }),
+    });
     const data = await r.json();
+    console.log(`[sendOtpProxy] mobile=${mobile} response=${JSON.stringify(data)}`);
     if (data.type === 'success') return res.json({ success: true });
     return res.status(400).json({ error: data.message || 'Failed to send OTP.' });
   } catch (err) {
@@ -217,17 +226,27 @@ export async function sendOtpProxy(req, res, next) {
   }
 }
 
-// Proxy: verify OTP via MSG91 REST API (used by Android app to bypass widget CORS)
+// Proxy: verify OTP via MSG91 Widget API (used by Android app to bypass widget CORS)
 export async function verifyOtpProxy(req, res, next) {
   try {
     const { mobile, otp, name, email } = req.body || {};
     if (!mobile || !otp) return res.status(400).json({ error: 'mobile and otp required' });
     const authKey = process.env.MSG91_AUTH_KEY;
+    const widgetId = process.env.MSG91_WIDGET_ID;
     if (!authKey) return res.status(500).json({ error: 'MSG91_AUTH_KEY not configured.' });
+    if (!widgetId) return res.status(500).json({ error: 'MSG91_WIDGET_ID not configured.' });
 
-    const url = `https://control.msg91.com/api/v5/otp/verify?mobile=${encodeURIComponent(mobile)}&otp=${encodeURIComponent(otp)}&authkey=${authKey}`;
-    const r = await fetch(url);
+    const r = await fetch('https://control.msg91.com/api/v5/widget/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'authKey': authKey,
+        'Widget-Id': widgetId,
+      },
+      body: JSON.stringify({ identifier: mobile, otp }),
+    });
     const data = await r.json();
+    console.log(`[verifyOtpProxy] mobile=${mobile} response=${JSON.stringify(data)}`);
     if (data.type !== 'success') return res.status(401).json({ error: data.message || 'OTP incorrect.' });
 
     // Find or create user
