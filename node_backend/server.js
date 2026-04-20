@@ -100,7 +100,11 @@ app.use((err, req, res, next) => {
 
 async function start() {
   await connectDb();
-  initFirebase();
+  try {
+    initFirebase();
+  } catch (e) {
+    console.error('[Firebase] init failed — phone auth disabled:', e.message);
+  }
   app.listen(PORT, () => {
     console.log(`API running on :${PORT}`);
   });

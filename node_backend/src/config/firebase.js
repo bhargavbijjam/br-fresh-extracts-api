@@ -9,17 +9,21 @@ export function initFirebase() {
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
   if (keyJson) {
-    // Parse directly first; fall back to converting literal \n sequences
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(keyJson);
     } catch {
       serviceAccount = JSON.parse(keyJson.replace(/\\n/g, '\n'));
     }
-    // Ensure private_key uses real newlines (some platforms double-escape them)
+    // If Render stored the JSON as a quoted string, parse again
+    if (typeof serviceAccount === 'string') {
+      serviceAccount = JSON.parse(serviceAccount);
+    }
+    // Ensure private_key uses real newlines
     if (typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
+    console.log('[Firebase] parsed service account keys:', Object.keys(serviceAccount));
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     initialized = true;
     return;
