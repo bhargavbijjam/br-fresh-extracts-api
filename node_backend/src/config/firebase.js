@@ -94,3 +94,27 @@ export async function sendPushNotification(userId, title, body) {
     console.warn('[FCM] Push notification failed:', err.message);
   }
 }
+
+/**
+ * Broadcast a push notification to ALL users who have FCM tokens.
+ * Batches in groups of 500 (FCM multicast limit).
+ */
+export async function sendPushToAllUsers(title, body) {
+  if (!initialized) return;
+  try {
+    const User = (await import('../models/User.js')).default;
+    const users = await User.find({ fcm_tokens: { $exists: true, $not: { $size: 0 } } })
+      .select('fcm_tokens').lean();
+
+    const allTokens = users.flatMap(u => u.fcm_tokens || []).filter(Boolean);
+    if (allTokens.length === 0) return;
+
+    // Batch into chunks of 500
+    for (let i = 0; i < allTokens.length; i += 500) {
+      const batch = allTokens.slice(i, i + 500);
+      await admin.messaging().sendEachForMulticast({ notification: { title, body }, tokens: batch });
+    }
+  } catch (err) {
+    console.warn('[FCM] Broadcast push failed:', err.message);
+  }
+}

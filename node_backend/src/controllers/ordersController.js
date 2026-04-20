@@ -1,4 +1,4 @@
-import { sendPushNotification } from '../config/firebase.js';
+import { sendPushNotification, sendPushToAllUsers } from '../config/firebase.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
@@ -108,6 +108,15 @@ export async function createOrder(req, res, next) {
       notes: notes || '',
       customer: customer || {},
     });
+
+    // Notify customer that order was placed
+    if (user?._id) {
+      sendPushNotification(
+        user._id,
+        'Order Placed! 🛒',
+        `Your order of ₹${computedTotal} has been received. We'll confirm it shortly.`
+      );
+    }
 
     res.status(201).json(normalizeOrder(order));
   } catch (err) {
