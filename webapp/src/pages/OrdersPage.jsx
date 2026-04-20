@@ -25,6 +25,29 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    setCancelling(orderId);
+    try {
+      const token = await getValidToken();
+      const res = await fetch(`${API_URL}orders/${orderId}/cancel/`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' } : o));
+      } else {
+        const d = await res.json();
+        alert(d.error || 'Could not cancel order.');
+      }
+    } catch {
+      alert('Network error. Please try again.');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   // Load localStorage orders for the signed-in phone number
   const loadLocalOrders = (phone) => {
@@ -67,28 +90,28 @@ export default function OrdersPage() {
 
       try {
         const res = await fetch(`${API_URL}orders/`, { headers: { Authorization: `Bearer ${token}` } });
-        const data = res.ok ? await res.json() : [];
-        const dbOrders = data.map(o => ({
-          id: o.id,
-          status: o.status || 'Pending',
-          date: o.created_at || o.date,
-          total: Number(o.total_amount || 0),
-          shipping: Number(o.shipping || 0),
-          paymentMethod: o.payment_mode || 'COD',
-          customer: o.customer || {},
-          items: (o.items || []).map(i => ({
-            name: i.product || i.name || '',
-            weight: i.weight || '',
-            qty: i.quantity || i.qty || 1,
-            price: Number(i.price_at_time || i.price || 0),
-          })),
-        }));
-
-        // Merge: DB orders are authoritative; add localStorage-only orders not yet in DB
-        const dbIds = new Set(dbOrders.map(o => o.id));
-        const extra = localOrders.filter(o => !dbIds.has(o.id));
-        const merged = [...dbOrders, ...extra].sort((a, b) => new Date(b.date) - new Date(a.date));
-        setOrders(merged);
+        if (res.ok) {
+          const data = await res.json();
+          const dbOrders = data.map(o => ({
+            id: o.id,
+            status: o.status || 'Pending',
+            date: o.created_at || o.date,
+            total: Number(o.total_amount || 0),
+            shipping: Number(o.shipping || 0),
+            paymentMethod: o.payment_mode || 'COD',
+            customer: o.customer || {},
+            items: (o.items || []).map(i => ({
+              name: i.product || i.name || '',
+              weight: i.weight || '',
+              qty: i.quantity || i.qty || 1,
+              price: Number(i.price_at_time || i.price || 0),
+            })),
+          }));
+          // DB is authoritative — show only DB orders when logged in
+          setOrders(dbOrders.sort((a, b) => new Date(b.date) - new Date(a.date)));
+        } else {
+          setOrders(localOrders);
+        }
       } catch {
         setOrders(localOrders);
       } finally {
@@ -203,6 +226,21 @@ export default function OrdersPage() {
                           )}
                         </div>
                       </div>
+
+                      {/* Cancel button — only for Pending orders */}
+                      {order.status === 'Pending' && (
+                        <div className="mt-4 pt-3 border-t border-sand-100">
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            disabled={cancelling === order.id}
+                            className="flex items-center gap-2 text-sm font-medium text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                          >
+                            {cancelling === order.id ? <Loader2 size={14} className="animate-spin" /> : null}
+                            Cancel Order
+                          </button>
+                          <p className="text-xs text-warm-brown/40 mt-1.5">Cancellation is only available before your order is packed.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -354,33 +354,46 @@ export default function ProductDetailPage() {
                 <span className="text-warm-brown/50 text-sm ml-2">per {selectedVariant.size}</span>
               </div>
 
-              {/* Add to cart */}
+              {/* Add to cart / Buy Now */}
               {product.in_stock ? (
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-3">
                   {cartItem ? (
-                    <div className="flex items-center gap-3 bg-white border border-sand-200 rounded-2xl px-5 py-3 shadow-sm">
-                      <button onClick={() => updateQty(key, cartItem.qty - 1)}
-                        className="w-9 h-9 rounded-full bg-sand-100 hover:bg-sand-200 flex items-center justify-center text-warm-brown transition-colors">
-                        <Minus size={16} />
-                      </button>
-                      <span className="w-8 text-center text-lg font-semibold text-forest-700">{cartItem.qty}</span>
-                      <button onClick={() => updateQty(key, cartItem.qty + 1)}
-                        className="w-9 h-9 rounded-full bg-terra-500 hover:bg-terra-600 flex items-center justify-center text-cream transition-colors">
-                        <Plus size={16} />
-                      </button>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 bg-white border border-sand-200 rounded-2xl px-5 py-3 shadow-sm">
+                        <button onClick={() => updateQty(key, cartItem.qty - 1)}
+                          className="w-9 h-9 rounded-full bg-sand-100 hover:bg-sand-200 flex items-center justify-center text-warm-brown transition-colors">
+                          <Minus size={16} />
+                        </button>
+                        <span className="w-8 text-center text-lg font-semibold text-forest-700">{cartItem.qty}</span>
+                        <button onClick={() => updateQty(key, cartItem.qty + 1)}
+                          className="w-9 h-9 rounded-full bg-terra-500 hover:bg-terra-600 flex items-center justify-center text-cream transition-colors">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      <Link to="/cart"
+                        className="px-8 py-3.5 rounded-2xl border border-forest-300 text-forest-700 font-semibold text-base hover:bg-forest-50 transition-all">
+                        View Cart
+                      </Link>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty: 1 })}
-                      className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-terra-500 hover:bg-terra-600 text-cream font-semibold text-base transition-all shadow-sm hover:shadow-md"
-                    >
-                      <ShoppingCart size={18} /> Add to Cart
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty: 1 })}
+                        className="flex items-center gap-2 px-6 py-3.5 rounded-2xl border border-terra-500 text-terra-500 hover:bg-terra-50 font-semibold text-base transition-all"
+                      >
+                        <ShoppingCart size={18} /> Add to Cart
+                      </button>
+                      <button
+                        onClick={() => {
+                          addToCart({ ...product, price: selectedVariant.price, weight: selectedVariant.size, qty: 1 });
+                          navigate('/checkout');
+                        }}
+                        className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-terra-500 hover:bg-terra-600 text-cream font-semibold text-base transition-all shadow-sm hover:shadow-md"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
                   )}
-                  <Link to="/cart"
-                    className="px-8 py-3.5 rounded-2xl border border-forest-300 text-forest-700 font-semibold text-base hover:bg-forest-50 transition-all">
-                    View Cart
-                  </Link>
                 </div>
               ) : (
                 <p className="text-sm text-red-500 font-medium bg-red-50 border border-red-100 rounded-xl px-4 py-3">

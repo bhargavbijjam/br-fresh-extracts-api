@@ -21,6 +21,7 @@ import {
 } from '../controllers/categoriesController.js';
 import {
     adminAnalytics,
+    cancelOrder,
     createOrder,
     listAdminCustomers,
     listAdminOrders,
@@ -58,6 +59,7 @@ router.delete('/products/:id/reviews/:reviewId/', requireSecret, deleteReview);
 // Orders (JWT)
 router.get('/orders/', requireJwt, listUserOrders);
 router.post('/orders/', requireJwt, createOrder);
+router.patch('/orders/:id/cancel/', requireJwt, cancelOrder);
 
 // Admin analytics & orders
 router.get('/admin/analytics/', requireSecret, adminAnalytics);

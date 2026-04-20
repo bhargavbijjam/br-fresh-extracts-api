@@ -134,6 +134,33 @@ export async function listAdminOrders(req, res, next) {
   }
 }
 
+// Customer cancels their own Pending order
+export async function cancelOrder(req, res, next) {
+  try {
+    const userId = req.jwtUser?.user_id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+    // Ensure this order belongs to the requesting user
+    if (String(order.user_id) !== String(userId)) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+
+    if (order.status !== 'Pending') {
+      return res.status(400).json({ error: 'Only Pending orders can be cancelled.' });
+    }
+
+    order.status = 'Cancelled';
+    await order.save();
+
+    res.json(normalizeOrder(order));
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateAdminOrder(req, res, next) {
   try {
     // Whitelist only the fields an admin is allowed to change
