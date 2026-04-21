@@ -1,7 +1,8 @@
-import { ExternalLink, Loader2, Package, ShoppingBag } from 'lucide-react';
+import { ExternalLink, Loader2, MessageSquarePlus, Package, ShoppingBag } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useStore } from '../contexts/StoreContext';
 
 const API_URL = (() => { const u = import.meta.env.VITE_API_URL || '/api/'; return u.endsWith('/') ? u : u + '/'; })();
 
@@ -21,6 +22,7 @@ function fmt(isoStr) {
 
 export default function OrdersPage() {
   const { user, getValidToken } = useAuth();
+  const { store } = useStore();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +107,7 @@ export default function OrdersPage() {
               weight: i.weight || '',
               qty: i.quantity || i.qty || 1,
               price: Number(i.price_at_time || i.price || 0),
+              product_id: i.product_id || null,
             })),
           }));
           // DB is authoritative — show only DB orders when logged in
@@ -186,14 +189,30 @@ export default function OrdersPage() {
                         <div>
                           <p className="text-xs font-semibold text-warm-brown/50 uppercase tracking-wide mb-2">Items</p>
                           <div className="space-y-1.5">
-                            {order.items.map((item, i) => (
-                              <div key={i} className="flex justify-between text-sm">
-                                <span className="text-forest-700">
-                                  {item.name} {item.weight ? <span className="text-warm-brown/40">({item.weight})</span> : ''} × {item.qty}
-                                </span>
-                                <span className="font-medium text-terra-500 shrink-0 ml-2">₹{(item.price * item.qty).toLocaleString()}</span>
-                              </div>
-                            ))}
+                            {order.items.map((item, i) => {
+                              // Resolve product_id: from API item, or by matching name in store
+                              const pid = item.product_id ||
+                                store.products.find(p => p.name === item.name)?.id ||
+                                null;
+                              return (
+                                <div key={i} className="flex justify-between items-start text-sm gap-2">
+                                  <span className="text-forest-700 flex-1">
+                                    {item.name} {item.weight ? <span className="text-warm-brown/40">({item.weight})</span> : ''} × {item.qty}
+                                  </span>
+                                  <div className="flex flex-col items-end shrink-0 gap-1">
+                                    <span className="font-medium text-terra-500">₹{(item.price * item.qty).toLocaleString()}</span>
+                                    {order.status === 'Delivered' && pid && (
+                                      <Link
+                                        to={`/product/${pid}#reviews`}
+                                        className="flex items-center gap-1 text-[10px] font-medium text-terra-500 border border-terra-300 bg-terra-50 hover:bg-terra-100 px-2 py-0.5 rounded-full transition-colors"
+                                      >
+                                        <MessageSquarePlus size={10} /> Review
+                                      </Link>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                             <div className="border-t border-sand-200 pt-1.5 mt-1.5 space-y-1">
                               {order.shipping > 0 && (
                                 <div className="flex justify-between text-xs text-warm-brown/50">

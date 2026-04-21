@@ -69,7 +69,17 @@ function ReviewsSection({ productId, productName, user, getValidToken }) {
 
   useEffect(() => { if (productId) fetchReviews(); }, [productId]);
 
+  // Auto-scroll to review form if URL has #reviews
+  useEffect(() => {
+    if (window.location.hash === '#reviews') {
+      setTimeout(() => {
+        document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+      }, 400);
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
+    e.preventDefault();
     setError(''); setSubmitting(true);
     try {
       const token = getValidToken ? await getValidToken() : null;
@@ -409,7 +419,9 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Reviews */}
-      <ReviewsSection productId={id} productName={product?.name} user={user} getValidToken={getValidToken} />
+      <div id="reviews">
+        <ReviewsSection productId={id} productName={product?.name} user={user} getValidToken={getValidToken} />
+      </div>
 
       {/* Suggestions */}
       {suggestions.length > 0 && (

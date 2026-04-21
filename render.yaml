@@ -1,7 +1,7 @@
 services:
   - type: web
     name: br-fresh-extracts-api
-    env: node
+    runtime: node
     rootDir: node_backend
     buildCommand: npm install
     startCommand: node server.js
