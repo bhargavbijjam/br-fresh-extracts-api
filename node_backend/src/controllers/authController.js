@@ -176,7 +176,7 @@ export async function firebaseVerify(req, res, next) {
     }
 
     // New user — if no name provided, signal frontend to collect profile
-    const { name, email, address_data } = req.body || {};
+    const { address_data } = req.body || {};
     if (!name?.trim()) {
       return res.json({ is_new: true });
     }
